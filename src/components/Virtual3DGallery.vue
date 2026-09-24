@@ -10,6 +10,9 @@
 <script setup>
 import { ref, onMounted, onBeforeUnmount } from 'vue'
 import * as THREE from 'three'
+import artwork1 from '../assets/artwork1.jpg'
+import artwork2 from '../assets/artwork2.jpg'
+import artwork3 from '../assets/artwork3.jpg'
 
 const canvasContainer = ref(null)
 let scene, camera, renderer, animationFrameId
@@ -20,7 +23,7 @@ let yaw = 0, pitch = 0
 onMounted(() => {
   // 1. Scene & Camera Setup
   scene = new THREE.Scene()
-  scene.background = new THREE.Color(0x111111)
+  scene.background = new THREE.Color(0xffffff)
 
   camera = new THREE.PerspectiveCamera(
     75,
@@ -50,13 +53,13 @@ onMounted(() => {
 
   // Floor
   const floorGeo = new THREE.PlaneGeometry(roomWidth, roomDepth)
-  const floorMat = new THREE.MeshStandardMaterial({ color: 0x222222, roughness: 0.8 })
+  const floorMat = new THREE.MeshStandardMaterial({ color: 0x1212121, roughness: 0.8 })
   const floor = new THREE.Mesh(floorGeo, floorMat)
   floor.rotation.x = -Math.PI / 2
   scene.add(floor)
 
   // Back Wall
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0xf0f0f0, roughness: 0.9 })
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0xefe5d2, roughness: 0.9 })
   const backWall = new THREE.Mesh(new THREE.PlaneGeometry(roomWidth, roomHeight), wallMat)
   backWall.position.set(0, roomHeight / 2, -roomDepth / 2)
   scene.add(backWall)
@@ -79,29 +82,37 @@ onMounted(() => {
   // Example artwork placement function
   const addArtwork = (imageUrl, width, height, position, rotationY) => {
     textureLoader.load(imageUrl, (texture) => {
-      const artGeo = new THREE.PlaneGeometry(width, height)
-      const artMat = new THREE.MeshBasicMaterial({ map: texture })
-      const artMesh = new THREE.Mesh(artGeo, artMat)
-      
-      // Add a simple frame border
-      const frameGeo = new THREE.BoxGeometry(width + 0.2, height + 0.2, 0.05)
-      const frameMat = new THREE.MeshStandardMaterial({ color: 0x332211 })
-      const frameMesh = new THREE.Mesh(frameGeo, frameMat)
-      frameMesh.position.z = -0.02
-      
-      const group = new THREE.Group()
-      group.add(artMesh)
-      group.add(frameMesh)
-      
-      group.position.copy(position)
-      group.rotation.y = rotationY
-      scene.add(group)
+        texture.colorSpace = THREE.SRGBColorSpace
+        const artGeo = new THREE.PlaneGeometry(width, height)
+        const artMat = new THREE.MeshBasicMaterial({
+          map: texture,
+          toneMapped: false
+        })
+        const artMesh = new THREE.Mesh(artGeo, artMat)
+        
+        // Add a simple frame border
+        const frameGeo = new THREE.BoxGeometry(width + 0.2, height + 0.2, 0.05)
+        const frameMat = new THREE.MeshBasicMaterial({ color: 0xffffff })
+        const frameMesh = new THREE.Mesh(frameGeo, frameMat)
+        // Keep the solid frame behind the artwork so it does not cover it.
+        frameMesh.position.z = -0.06
+        
+        const group = new THREE.Group()
+        group.add(artMesh)
+        group.add(frameMesh)
+        
+        group.position.copy(position)
+        group.rotation.y = rotationY
+        scene.add(group)
     })
   }
 
   // Place your pieces around the room walls (Replace with your actual hosted image URLs or assets)
-  addArtwork('https://images.unsplash.com/photo-1579783900882-c0d3dad7b119', 3, 2, new THREE.Vector3(0, 1.8, -7.9), 0)
-  addArtwork('https://images.unsplash.com/photo-1578926375605-eaf7559b1458', 3, 2, new THREE.Vector3(-7.9, 1.8, 0), Math.PI / 2)
+  // addArtwork('https://images.unsplash.com/photo-1579783900882-c0d3dad7b119', 3, 2, new THREE.Vector3(0, 1.8, -7.9), 0)
+  // addArtwork('https://images.unsplash.com/photo-1578926375605-eaf7559b1458', 3, 2, new THREE.Vector3(-7.9, 1.8, 0), Math.PI / 2)
+  addArtwork(artwork1, 2, 2, new THREE.Vector3(0, 1.8, -7.9), 0)
+  addArtwork(artwork2, 2, 3, new THREE.Vector3(-7.9, 1.8, 0), Math.PI / 2)
+  addArtwork(artwork3, 2, 2, new THREE.Vector3(7.9, 1.8, 0), -Math.PI / 2)
 
   // 6. Event Listeners for Movement & Looking
   const onKeyDown = (e) => {
