@@ -31,7 +31,7 @@ onMounted(() => {
     0.1,
     1000
   )
-  camera.position.set(0, 1.6, 5) // Eye level height
+  camera.position.set(0, 1.6, 8) // Eye level height
 
   // 2. Renderer Setup
   renderer = new THREE.WebGLRenderer({ antialias: true })
@@ -47,9 +47,9 @@ onMounted(() => {
   scene.add(directionalLight)
 
   // 4. Build Room (Floor, Ceiling, Walls)
-  const roomWidth = 16
+  const roomWidth = 20
   const roomHeight = 5
-  const roomDepth = 16
+  const roomDepth = 24
 
   // Floor
   const floorGeo = new THREE.PlaneGeometry(roomWidth, roomDepth)
@@ -75,6 +75,21 @@ onMounted(() => {
   rightWall.position.set(roomWidth / 2, roomHeight / 2, 0)
   rightWall.rotation.y = -Math.PI / 2
   scene.add(rightWall)
+
+  // Central divider creates two exhibition zones with a wide passage between them.
+  const dividerMat = new THREE.MeshStandardMaterial({
+    color: 0xefe5d2,
+    roughness: 0.9,
+    side: THREE.DoubleSide
+  })
+  const dividerPanelGeo = new THREE.PlaneGeometry(7, roomHeight)
+  const leftDivider = new THREE.Mesh(dividerPanelGeo, dividerMat)
+  leftDivider.position.set(-6.5, roomHeight / 2, 0)
+  scene.add(leftDivider)
+
+  const rightDivider = new THREE.Mesh(dividerPanelGeo, dividerMat)
+  rightDivider.position.set(6.5, roomHeight / 2, 0)
+  scene.add(rightDivider)
 
   // 5. Add Artworks to Walls
   const textureLoader = new THREE.TextureLoader()
@@ -107,12 +122,35 @@ onMounted(() => {
     })
   }
 
-  // Place your pieces around the room walls (Replace with your actual hosted image URLs or assets)
-  // addArtwork('https://images.unsplash.com/photo-1579783900882-c0d3dad7b119', 3, 2, new THREE.Vector3(0, 1.8, -7.9), 0)
-  // addArtwork('https://images.unsplash.com/photo-1578926375605-eaf7559b1458', 3, 2, new THREE.Vector3(-7.9, 1.8, 0), Math.PI / 2)
-  addArtwork(artwork1, 2, 2, new THREE.Vector3(0, 1.8, -7.9), 0)
-  addArtwork(artwork2, 2, 3, new THREE.Vector3(-7.9, 1.8, 0), Math.PI / 2)
-  addArtwork(artwork3, 2, 2, new THREE.Vector3(7.9, 1.8, 0), -Math.PI / 2)
+  // Reuse the existing artwork files to fill the larger gallery layout.
+  const galleryArtworks = [
+    // left divider
+    [artwork3, 2.4, 2, new THREE.Vector3(-6.5, 1.8, 0.09), 0],
+    [artwork2, 2, 3, new THREE.Vector3(-6.5, 1.8, -0.09), Math.PI],
+
+    // left wal  
+    [artwork2, 2, 3, new THREE.Vector3(-9.9, 1.8, -7), Math.PI / 2],
+    [artwork3, 2.4, 2, new THREE.Vector3(-9.9, 1.8, -2), Math.PI / 2],
+    
+    // front wall
+    [artwork1, 2.4, 2, new THREE.Vector3(-6, 1.8, -11.9), 0],
+    [artwork2, 2, 3, new THREE.Vector3(-2, 1.8, -11.9), 0],
+    [artwork3, 2.4, 2, new THREE.Vector3(2, 1.8, -11.9), 0],
+    [artwork1, 2.4, 2, new THREE.Vector3(6, 1.8, -11.9), 0],
+    
+    // right wall
+    [artwork1, 2.4, 2, new THREE.Vector3(9.9, 1.8, -7), -Math.PI / 2],
+    [artwork2, 2, 3, new THREE.Vector3(9.9, 1.8, -2), -Math.PI / 2],
+
+
+    // right divider
+    [artwork1, 2.4, 2, new THREE.Vector3(6.5, 1.8, 0.09), 0],
+    [artwork3, 2.4, 2, new THREE.Vector3(6.5, 1.8, -0.09), Math.PI]
+  ]
+
+  galleryArtworks.forEach(([image, width, height, position, rotationY]) => {
+    addArtwork(image, width, height, position, rotationY)
+  })
 
   // 6. Event Listeners for Movement & Looking
   const onKeyDown = (e) => {
@@ -170,8 +208,8 @@ onMounted(() => {
     if (moveLeft) camera.position.addScaledVector(sideDir, -speed)
 
     // Keep camera inside room boundaries
-    camera.position.x = Math.max(-7, Math.min(7, camera.position.x))
-    camera.position.z = Math.max(-7, Math.min(7, camera.position.z))
+    camera.position.x = Math.max(-9, Math.min(9, camera.position.x))
+    camera.position.z = Math.max(-11, Math.min(11, camera.position.z))
 
     renderer.render(scene, camera)
   }
