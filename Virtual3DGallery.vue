@@ -15,14 +15,13 @@ import artwork2 from '../assets/artwork2.jpg'
 import artwork3 from '../assets/artwork3.jpg'
 import wallTextureImage from '../../wall-texture-4.jpg'
 import floorTextureImage from '../../floor-texture.jpg'
-import floorMedallionImage from '../../floor-texture-2.jpg'
-import dividerPatternImage from '../../wall-devider-texture.jpg'
+import floorMedallionImage from '../../wall-texture-3.jpg'
 
 const canvasContainer = ref(null)
 let scene, camera, renderer, animationFrameId
 let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false
+let prevMouseX = 0, prevMouseY = 0
 let yaw = 0, pitch = 0
-let eventController
 
 onMounted(() => {
   // 1. Scene & Camera Setup
@@ -47,6 +46,10 @@ onMounted(() => {
   const ambientLight = new THREE.AmbientLight(0xffffff, 1)
   scene.add(ambientLight)
 
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5)
+  directionalLight.position.set(0, 10, 5)
+  scene.add(directionalLight)
+
   // 4. Build Room (Floor, Ceiling, Walls)
   const roomWidth = 20
   const roomHeight = 5
@@ -55,8 +58,6 @@ onMounted(() => {
   const textureLoader = new THREE.TextureLoader()
   const wallImageAspect = 5760 / 3840
   const wallTextureScale = 2
-
-  // Reuse the wall image while preserving its aspect ratio on each surface.
   const createWallMaterial = (surfaceWidth, surfaceHeight, doubleSided = false) => {
     const texture = textureLoader.load(wallTextureImage)
     texture.colorSpace = THREE.SRGBColorSpace
@@ -74,7 +75,6 @@ onMounted(() => {
     })
   }
 
-  // Generate a subtle repeating panel texture for the ceiling.
   const createSurfaceTexture = (baseColor, panelColors) => {
     const canvas = document.createElement('canvas')
     canvas.width = 512
@@ -116,49 +116,6 @@ onMounted(() => {
   floor.rotation.x = -Math.PI / 2
   scene.add(floor)
 
-  // Mark out the far room with a second floor texture and a narrow trim.
-  const farRoomFloorZoneWidth = roomWidth - 2
-  const farRoomFloorZoneDepth = roomDepth / 2 - 1
-  const farRoomFloorTexture = floorTexture.clone()
-  farRoomFloorTexture.repeat.set(4, 3)
-  farRoomFloorTexture.needsUpdate = true
-  const farRoomFloorZone = new THREE.Mesh(
-    new THREE.PlaneGeometry(farRoomFloorZoneWidth, farRoomFloorZoneDepth),
-    new THREE.MeshBasicMaterial({
-      map: farRoomFloorTexture,
-      toneMapped: false
-    })
-  )
-  farRoomFloorZone.rotation.x = -Math.PI / 2
-  farRoomFloorZone.position.set(0, 0.008, -roomDepth / 4)
-  scene.add(farRoomFloorZone)
-
-  const floorZoneTrimMaterial = new THREE.MeshStandardMaterial({
-    color: 0x97805b,
-    roughness: 0.62,
-    metalness: 0.16
-  })
-  const floorZoneCenterZ = -roomDepth / 4
-  const floorZoneTopTrim = new THREE.Mesh(
-    new THREE.BoxGeometry(farRoomFloorZoneWidth, 0.025, 0.04),
-    floorZoneTrimMaterial
-  )
-  floorZoneTopTrim.position.set(0, 0.018, floorZoneCenterZ - farRoomFloorZoneDepth / 2)
-  scene.add(floorZoneTopTrim)
-  const floorZoneBottomTrim = floorZoneTopTrim.clone()
-  floorZoneBottomTrim.position.z = floorZoneCenterZ + farRoomFloorZoneDepth / 2
-  scene.add(floorZoneBottomTrim)
-  const floorZoneSideTrim = new THREE.Mesh(
-    new THREE.BoxGeometry(0.04, 0.025, farRoomFloorZoneDepth),
-    floorZoneTrimMaterial
-  )
-  floorZoneSideTrim.position.set(-farRoomFloorZoneWidth / 2, 0.018, floorZoneCenterZ)
-  scene.add(floorZoneSideTrim)
-  const floorZoneRightTrim = floorZoneSideTrim.clone()
-  floorZoneRightTrim.position.x = farRoomFloorZoneWidth / 2
-  scene.add(floorZoneRightTrim)
-
-  // Center the patterned medallion inside the far-room floor zone.
   const floorMedallionTexture = textureLoader.load(floorMedallionImage)
   floorMedallionTexture.colorSpace = THREE.SRGBColorSpace
   floorMedallionTexture.anisotropy = renderer.capabilities.getMaxAnisotropy()
@@ -169,8 +126,8 @@ onMounted(() => {
       toneMapped: false
     })
   )
-  floorMedallion.rotation.x = -Math.PI / 2 
-  floorMedallion.position.set(0, 0.02, floorZoneCenterZ)
+  floorMedallion.rotation.x = -Math.PI / 2
+  floorMedallion.position.y = 0.02
   scene.add(floorMedallion)
 
   const medallionBorder = new THREE.Mesh(
@@ -178,10 +135,10 @@ onMounted(() => {
     new THREE.MeshStandardMaterial({ color: 0xb39a6a, roughness: 0.62, metalness: 0.18 })
   )
   medallionBorder.rotation.x = -Math.PI / 2
-  medallionBorder.position.set(0, 0.025, floorZoneCenterZ)
+  medallionBorder.position.y = 0.025
   scene.add(medallionBorder)
 
-  // Add acoustic ceiling panels.
+  // Soft acoustic ceiling panels and gallery track lighting.
   const ceilingTexture = createSurfaceTexture('#aaa69d', ['#f2efe8', '#eeebe4', '#f0ede6', '#eae7e0'])
   ceilingTexture.repeat.set(5, 6)
   const ceiling = new THREE.Mesh(
@@ -191,6 +148,32 @@ onMounted(() => {
   ceiling.rotation.x = Math.PI / 2
   ceiling.position.y = roomHeight
   scene.add(ceiling)
+
+  const trackMaterial = new THREE.MeshStandardMaterial({ color: 0x383833, roughness: 0.38, metalness: 0.55 })
+  const fixtureMaterial = new THREE.MeshStandardMaterial({ color: 0x514e47, roughness: 0.42, metalness: 0.4 })
+  const trackPositions = [-8, 0, 8]
+  const fixturePositions = [-6, -2, 2, 6]
+
+  trackPositions.forEach((z) => {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(roomWidth - 1, 0.055, 0.08), trackMaterial)
+    rail.position.set(0, roomHeight - 0.08, z)
+    scene.add(rail)
+
+    fixturePositions.forEach((x) => {
+      const fixture = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.16, 0.2, 12), fixtureMaterial)
+      fixture.position.set(x, roomHeight - 0.2, z)
+      scene.add(fixture)
+
+      const target = new THREE.Object3D()
+      target.position.set(x, 0, z)
+      scene.add(target)
+
+      const spotlight = new THREE.SpotLight(0xffe8c8, 18, 11, Math.PI / 5, 0.7, 2)
+      spotlight.position.set(x, roomHeight - 0.3, z)
+      spotlight.target = target
+      scene.add(spotlight)
+    })
+  })
 
   // Back Wall
   const backWall = new THREE.Mesh(
@@ -219,58 +202,23 @@ onMounted(() => {
   scene.add(rightWall)
 
   // Central divider creates two exhibition zones with a wide passage between them.
-  const dividerThickness = 0.25
-  const dividerPanelGeo = new THREE.BoxGeometry(7, roomHeight, dividerThickness)
-  const texture = textureLoader.load(wallTextureImage)
-  texture.colorSpace = THREE.SRGBColorSpace
-  const dividerEdgeMaterial = new THREE.MeshBasicMaterial({
-    map: texture,
-    toneMapped: false
-  })
-  const createDividerMaterials = (faceMaterial) => [
-    dividerEdgeMaterial,
-    dividerEdgeMaterial,
-    dividerEdgeMaterial,
-    dividerEdgeMaterial,
-    faceMaterial,
-    faceMaterial
-  ]
-
+  const dividerPanelGeo = new THREE.PlaneGeometry(7, roomHeight)
   const leftDivider = new THREE.Mesh(
     dividerPanelGeo,
-    createDividerMaterials(createWallMaterial(7, roomHeight, true))
+    createWallMaterial(7, roomHeight, true)
   )
   leftDivider.position.set(-6.5, roomHeight / 2, 0)
   scene.add(leftDivider)
 
-  // Give the right divider its geometric pattern; keep the left divider in the wall finish.
-  const dividerPatternTexture = textureLoader.load(dividerPatternImage)
-  dividerPatternTexture.colorSpace = THREE.SRGBColorSpace
-  dividerPatternTexture.anisotropy = renderer.capabilities.getMaxAnisotropy()
-  const dividerPatternMaterial = new THREE.MeshBasicMaterial({
-    map: dividerPatternTexture,
-    toneMapped: false,
-    side: THREE.DoubleSide
-  })
   const rightDivider = new THREE.Mesh(
     dividerPanelGeo,
-    createDividerMaterials(dividerPatternMaterial)
+    createWallMaterial(7, roomHeight, true)
   )
-  rightDivider.position.set(6.5, roomHeight / 2, 0)
+  rightDivider.position.set(7, roomHeight / 2, 0)
   scene.add(rightDivider)
 
-  const dividerCollisionBounds = [leftDivider, rightDivider].map((divider) =>
-    new THREE.Box3().setFromObject(divider).expandByScalar(0.35)
-  )
-  const moveCamera = (direction, distance) => {
-    const destination = camera.position.clone().addScaledVector(direction, distance)
-    const collidesWithDivider = dividerCollisionBounds.some((bounds) => bounds.containsPoint(destination))
-    if (!collidesWithDivider) camera.position.copy(destination)
-  }
-
   // 5. Add Artworks to Walls
-  // Load each artwork with a frame and three aligned picture lights.
-  const pictureLightOffsets = [-0.28, 0, 0.28]
+  // Example artwork placement function
   const addArtwork = (imageUrl, width, height, position, rotationY) => {
     textureLoader.load(imageUrl, (texture) => {
         texture.colorSpace = THREE.SRGBColorSpace
@@ -306,7 +254,7 @@ onMounted(() => {
         pictureLight.position.set(0, height / 2 + 0.14, 0.12)
         group.add(pictureLight)
 
-        pictureLightOffsets.forEach((offset) => {
+        ;[-0.28, 0, 0.28].forEach((offset) => {
           const lightX = width * offset
           const lightHead = new THREE.Mesh(
             new THREE.CylinderGeometry(0.035, 0.06, 0.12, 12),
@@ -331,14 +279,13 @@ onMounted(() => {
     })
   }
 
-  // Reuse the existing artwork files to fill the gallery layout.
-  const dividerArtworkOffset = dividerThickness / 2 + 0.095
+  // Reuse the existing artwork files to fill the larger gallery layout.
   const galleryArtworks = [
     // left divider
-    [artwork3, 2.4, 2, new THREE.Vector3(-6.5, 1.8, dividerArtworkOffset), 0],
-    [artwork2, 2, 3, new THREE.Vector3(-6.5, 1.8, -dividerArtworkOffset), Math.PI],
+    [artwork3, 2.4, 2, new THREE.Vector3(-6.5, 1.8, 0.09), 0],
+    [artwork2, 2, 3, new THREE.Vector3(-6.5, 1.8, -0.09), Math.PI],
 
-    // Left wall
+    // left wal  
     [artwork2, 2, 3, new THREE.Vector3(-9.9, 1.8, -7), Math.PI / 2],
     [artwork3, 2.4, 2, new THREE.Vector3(-9.9, 1.8, -2), Math.PI / 2],
     
@@ -354,8 +301,8 @@ onMounted(() => {
 
 
     // right divider
-    [artwork1, 2.4, 2, new THREE.Vector3(6.5, 1.8, dividerArtworkOffset), 0],
-    [artwork3, 2.4, 2, new THREE.Vector3(6.5, 1.8, -dividerArtworkOffset), Math.PI]
+    [artwork1, 2.4, 2, new THREE.Vector3(6.5, 1.8, 0.09), 0],
+    [artwork3, 2.4, 2, new THREE.Vector3(6.5, 1.8, -0.09), Math.PI]
   ]
 
   galleryArtworks.forEach(([image, width, height, position, rotationY]) => {
@@ -378,6 +325,7 @@ onMounted(() => {
   }
 
   const onMouseMove = (e) => {
+    // Only look around if mouse is clicked/dragged or pointer locked
     const movementX = e.movementX || 0
     const movementY = e.movementY || 0
 
@@ -392,15 +340,12 @@ onMounted(() => {
     camera.lookAt(camera.position.clone().add(direction))
   }
 
-  // One controller removes all input and resize listeners when the component unmounts.
-  eventController = new AbortController()
-  const listenerOptions = { signal: eventController.signal }
-  window.addEventListener('keydown', onKeyDown, listenerOptions)
-  window.addEventListener('keyup', onKeyUp, listenerOptions)
+  window.addEventListener('keydown', onKeyDown)
+  window.addEventListener('keyup', onKeyUp)
   canvasContainer.value.addEventListener('click', () => {
     canvasContainer.value.requestPointerLock()
-  }, listenerOptions)
-  canvasContainer.value.addEventListener('mousemove', onMouseMove, listenerOptions)
+  })
+  canvasContainer.value.addEventListener('mousemove', onMouseMove)
 
   // 7. Animation Loop (Handles Walking physics)
   const animate = () => {
@@ -414,10 +359,10 @@ onMounted(() => {
 
     const sideDir = new THREE.Vector3(-dir.z, 0, dir.x)
 
-    if (moveForward) moveCamera(dir, speed)
-    if (moveBackward) moveCamera(dir, -speed)
-    if (moveRight) moveCamera(sideDir, speed)
-    if (moveLeft) moveCamera(sideDir, -speed)
+    if (moveForward) camera.position.addScaledVector(dir, speed)
+    if (moveBackward) camera.position.addScaledVector(dir, -speed)
+    if (moveRight) camera.position.addScaledVector(sideDir, speed)
+    if (moveLeft) camera.position.addScaledVector(sideDir, -speed)
 
     // Keep camera inside room boundaries
     camera.position.x = Math.max(-9, Math.min(9, camera.position.x))
@@ -427,21 +372,19 @@ onMounted(() => {
   }
   animate()
 
-  // Keep the camera projection matched to the gallery container.
+  // Handle window resizing
   const handleResize = () => {
     if (!canvasContainer.value) return
     camera.aspect = canvasContainer.value.clientWidth / canvasContainer.value.clientHeight
     camera.updateProjectionMatrix()
     renderer.setSize(canvasContainer.value.clientWidth, canvasContainer.value.clientHeight)
   }
-  window.addEventListener('resize', handleResize, listenerOptions)
+  window.addEventListener('resize', handleResize)
 })
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(animationFrameId)
-  eventController?.abort()
-  renderer?.dispose()
-  renderer?.domElement.remove()
+  window.removeEventListener('resize', () => {})
 })
 </script>
 
