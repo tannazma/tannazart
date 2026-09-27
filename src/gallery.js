@@ -3,10 +3,13 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.m
 const artwork1 = './src/assets/arts/artwork1.jpg'
 const artwork2 = './src/assets/arts/artwork2.jpg'
 const artwork3 = './src/assets/arts/artwork3.jpg'
+const artwork4 = './src/assets/arts/artwork4.jpeg'
+const artwork5 = './src/assets/arts/artwork5.png'
+const artwork6 = './src/assets/arts/artwork6.jpeg'
+const artwork7 = './src/assets/arts/artwork7.jpeg'
 const wallTextureImage = './src/assets/wall-texture-4.jpg'
 const floorTextureImage = './src/assets/floor-texture.jpg'
 const floorMedallionImage = './src/assets/floor-texture-2.jpg'
-const dividerPatternImage = './src/assets/wall-divider-texture.jpg'
 const ceilingTextureImage = './src/assets/ceiling-texture.jpg'
 
 function mountGallery(container) {
@@ -231,18 +234,10 @@ function mountGallery(container) {
   leftDivider.position.set(-6.5, roomHeight / 2, 0)
   scene.add(leftDivider)
 
-  // Give the right divider its geometric pattern; keep the left divider in the wall finish.
-  const dividerPatternTexture = textureLoader.load(dividerPatternImage)
-  dividerPatternTexture.colorSpace = THREE.SRGBColorSpace
-  dividerPatternTexture.anisotropy = renderer.capabilities.getMaxAnisotropy()
-  const dividerPatternMaterial = new THREE.MeshBasicMaterial({
-    map: dividerPatternTexture,
-    toneMapped: false,
-    side: THREE.DoubleSide
-  })
+  // Keep both dividers in the same wall finish.
   const rightDivider = new THREE.Mesh(
     dividerPanelGeo,
-    createDividerMaterials(dividerPatternMaterial)
+    createDividerMaterials(createWallMaterial(7, roomHeight, true))
   )
   rightDivider.position.set(6.5, roomHeight / 2, 0)
   scene.add(rightDivider)
@@ -323,26 +318,21 @@ function mountGallery(container) {
   const dividerArtworkOffset = dividerThickness / 2 + 0.095
   const galleryArtworks = [
     // left divider
-    [artwork3, 2.4, 2, new THREE.Vector3(-6.5, 1.8, dividerArtworkOffset), 0],
-    [artwork2, 2, 3, new THREE.Vector3(-6.5, 1.8, -dividerArtworkOffset), Math.PI],
+    [artwork4, 3.2, 3.2, new THREE.Vector3(-6.5, 2.25, dividerArtworkOffset), 0],
+    [artwork6, 3.2, 3.2, new THREE.Vector3(-6.5, 2.1, -dividerArtworkOffset), Math.PI],
 
     // Left wall
-    [artwork2, 2, 3, new THREE.Vector3(-9.9, 1.8, -7), Math.PI / 2],
-    [artwork3, 2.4, 2, new THREE.Vector3(-9.9, 1.8, -2), Math.PI / 2],
+    [artwork2, 3.4, 4.2, new THREE.Vector3(-9.9, 2.3, -6), Math.PI / 2],
 
     // front wall
-    [artwork1, 2.4, 2, new THREE.Vector3(-6, 1.8, -11.9), 0],
-    [artwork2, 2, 3, new THREE.Vector3(-2, 1.8, -11.9), 0],
-    [artwork3, 2.4, 2, new THREE.Vector3(2, 1.8, -11.9), 0],
-    [artwork1, 2.4, 2, new THREE.Vector3(6, 1.8, -11.9), 0],
+    [artwork1, 4, 3.2, new THREE.Vector3(0, 2.1, -11.9), 0],
 
     // right wall
-    [artwork1, 2.4, 2, new THREE.Vector3(9.9, 1.8, -7), -Math.PI / 2],
-    [artwork2, 2, 3, new THREE.Vector3(9.9, 1.8, -2), -Math.PI / 2],
+    [artwork3, 2.8, 4, new THREE.Vector3(9.9, 2.1, -6), -Math.PI / 2],
 
     // right divider
-    [artwork1, 2.4, 2, new THREE.Vector3(6.5, 1.8, dividerArtworkOffset), 0],
-    [artwork3, 2.4, 2, new THREE.Vector3(6.5, 1.8, -dividerArtworkOffset), Math.PI]
+    [artwork5, 3.2, 3.2, new THREE.Vector3(6.5, 2.1, dividerArtworkOffset), 0],
+    [artwork7, 1.4, 2.15, new THREE.Vector3(6.5, 2.5, -dividerArtworkOffset), Math.PI]
   ]
 
   galleryArtworks.forEach(([image, width, height, position, rotationY]) => {
