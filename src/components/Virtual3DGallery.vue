@@ -16,7 +16,9 @@ import artwork3 from '../assets/artwork3.jpg'
 import wallTextureImage from '../../wall-texture-4.jpg'
 import floorTextureImage from '../../floor-texture.jpg'
 import floorMedallionImage from '../../floor-texture-2.jpg'
-import dividerPatternImage from '../../wall-devider-texture.jpg'
+import dividerPatternImage from '../../wall-divider-texture.jpg'
+import ceilingTextureImage from '../../ceiling-texture.jpg'
+
 
 const canvasContainer = ref(null)
 let scene, camera, renderer, animationFrameId
@@ -72,32 +74,6 @@ onMounted(() => {
       toneMapped: false,
       side: doubleSided ? THREE.DoubleSide : THREE.FrontSide
     })
-  }
-
-  // Generate a subtle repeating panel texture for the ceiling.
-  const createSurfaceTexture = (baseColor, panelColors) => {
-    const canvas = document.createElement('canvas')
-    canvas.width = 512
-    canvas.height = 512
-    const context = canvas.getContext('2d')
-    context.fillStyle = baseColor
-    context.fillRect(0, 0, canvas.width, canvas.height)
-
-    const panelSize = 128
-    for (let row = 0; row < 4; row += 1) {
-      for (let column = 0; column < 4; column += 1) {
-        const color = panelColors[(row * 3 + column * 5) % panelColors.length]
-        context.fillStyle = color
-        context.fillRect(column * panelSize + 2, row * panelSize + 2, panelSize - 4, panelSize - 4)
-      }
-    }
-
-    const texture = new THREE.CanvasTexture(canvas)
-    texture.colorSpace = THREE.SRGBColorSpace
-    texture.wrapS = THREE.RepeatWrapping
-    texture.wrapT = THREE.RepeatWrapping
-    texture.anisotropy = renderer.capabilities.getMaxAnisotropy()
-    return texture
   }
 
   // Floor
@@ -181,12 +157,28 @@ onMounted(() => {
   medallionBorder.position.set(0, 0.025, floorZoneCenterZ)
   scene.add(medallionBorder)
 
-  // Add acoustic ceiling panels.
-  const ceilingTexture = createSurfaceTexture('#aaa69d', ['#f2efe8', '#eeebe4', '#f0ede6', '#eae7e0'])
-  ceilingTexture.repeat.set(5, 6)
+  // Tile the architectural image across the ceiling without stretching each copy.
+  const ceilingTexture = textureLoader.load(ceilingTextureImage)
+  ceilingTexture.colorSpace = THREE.SRGBColorSpace
+  ceilingTexture.anisotropy = renderer.capabilities.getMaxAnisotropy()
+  const ceilingImageAspect = 4193 / 3145
+  const ceilingSurfaceAspect = roomWidth / roomDepth
+  const ceilingTileCountDepth = 4
+  const ceilingTileCountWidth = ceilingSurfaceAspect / ceilingImageAspect * ceilingTileCountDepth
+  ceilingTexture.wrapS = THREE.RepeatWrapping
+  ceilingTexture.wrapT = THREE.RepeatWrapping
+  ceilingTexture.repeat.set(ceilingTileCountWidth, ceilingTileCountDepth)
+  ceilingTexture.offset.set((1 - ceilingTileCountWidth) / 2, 0)
+  ceilingTexture.needsUpdate = true
+
+  // Map the architectural image onto a flat ceiling.
   const ceiling = new THREE.Mesh(
     new THREE.PlaneGeometry(roomWidth, roomDepth),
-    new THREE.MeshStandardMaterial({ map: ceilingTexture, roughness: 0.92, side: THREE.DoubleSide })
+    new THREE.MeshBasicMaterial({
+      map: ceilingTexture,
+      toneMapped: false,
+      side: THREE.DoubleSide
+    })
   )
   ceiling.rotation.x = Math.PI / 2
   ceiling.position.y = roomHeight
