@@ -254,7 +254,57 @@ function mountGallery(container) {
   // 5. Add Artworks to Walls
   // Load each artwork with a frame and three aligned picture lights.
   const pictureLightOffsets = [-0.28, 0, 0.28]
-  const addArtwork = (imageUrl, width, height, position, rotationY) => {
+  const descriptionWidth = 0.8
+  const descriptionHeight = 1.35
+  const descriptionGap = 0.2
+  const createDescriptionMaterial = (title, medium) => {
+    const canvas = document.createElement('canvas')
+    canvas.width = 320
+    canvas.height = 540
+    const context = canvas.getContext('2d')
+    context.fillStyle = '#ffffff'
+    context.fillRect(0, 0, canvas.width, canvas.height)
+    context.strokeStyle = '#c8c8c8'
+    context.lineWidth = 5
+    context.strokeRect(5, 5, canvas.width - 10, canvas.height - 10)
+    const wrapText = (text, maxWidth) => {
+      const words = text.split(' ')
+      const lines = []
+      let line = ''
+      words.forEach((word) => {
+        const candidate = line ? `${line} ${word}` : word
+        if (context.measureText(candidate).width > maxWidth && line) {
+          lines.push(line)
+          line = word
+        } else {
+          line = candidate
+        }
+      })
+      if (line) lines.push(line)
+      return lines
+    }
+
+    context.fillStyle = '#141414'
+    context.font = 'bold 27px Georgia'
+    wrapText(title.toUpperCase(), 250).forEach((line, index) => {
+      context.fillText(line, 32, 78 + index * 38)
+    })
+    context.fillStyle = '#404040'
+    context.font = '23px Georgia'
+    wrapText(medium, 250).forEach((line, index) => {
+      context.fillText(line, 32, 190 + index * 32)
+    })
+    context.fillStyle = '#313231'
+    context.font = '18px Georgia'
+    context.fillText('Tannaz Akbari', 32, 455)
+    context.fillText('https://tannazart.com', 32, 480)
+
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.colorSpace = THREE.SRGBColorSpace
+    return new THREE.MeshBasicMaterial({ map: texture, toneMapped: false })
+  }
+
+  const addArtwork = (imageUrl, width, height, position, rotationY, title, medium) => {
     textureLoader.load(imageUrl, (texture) => {
       texture.colorSpace = THREE.SRGBColorSpace
       const artGeo = new THREE.PlaneGeometry(width, height)
@@ -280,6 +330,18 @@ function mountGallery(container) {
       const group = new THREE.Group()
       group.add(artMesh)
       group.add(frameMesh)
+
+      const description = new THREE.Mesh(
+        new THREE.PlaneGeometry(descriptionWidth, descriptionHeight),
+        createDescriptionMaterial(title, medium)
+      )
+      const artworkFrameRightEdge = (width + 0.2) / 2
+      description.position.set(
+        artworkFrameRightEdge + descriptionGap + descriptionWidth / 2,
+        -0.08,
+        0.03
+      )
+      group.add(description)
 
       const pictureLightMaterial = new THREE.MeshBasicMaterial({ color: 0x88734e })
       const pictureLight = new THREE.Mesh(
@@ -318,25 +380,25 @@ function mountGallery(container) {
   const dividerArtworkOffset = dividerThickness / 2 + 0.095
   const galleryArtworks = [
     // left divider
-    [artwork4, 3.2, 3.2, new THREE.Vector3(-6.5, 2.25, dividerArtworkOffset), 0],
-    [artwork6, 3.2, 3.2, new THREE.Vector3(-6.5, 2.1, -dividerArtworkOffset), Math.PI],
+    [artwork4, 3.2, 3.2, new THREE.Vector3(-6.5, 2.25, dividerArtworkOffset), 0, 'Light in the dark', 'Acrylic paint on canvas'],
+    [artwork6, 3.2, 3.2, new THREE.Vector3(-6.5, 2.1, -dividerArtworkOffset), Math.PI, 'Are you pooping?', 'Oil pastels on paper'],
 
     // Left wall
-    [artwork2, 3.4, 4.2, new THREE.Vector3(-9.9, 2.3, -6), Math.PI / 2],
+    [artwork2, 2.8, 4, new THREE.Vector3(-9.9, 2.3, -6), Math.PI / 2, 'The red lighthouse', 'Oil pastels on paper'],
 
     // front wall
-    [artwork1, 4, 3.2, new THREE.Vector3(0, 2.1, -11.9), 0],
+    [artwork1, 3.2, 3.2, new THREE.Vector3(0, 2.1, -11.9), 0, 'Daisies flowers', 'Oil pastels on paper'],
 
     // right wall
-    [artwork3, 2.8, 4, new THREE.Vector3(9.9, 2.1, -6), -Math.PI / 2],
+    [artwork3, 2.8, 4, new THREE.Vector3(9.9, 2.1, -6), -Math.PI / 2, 'Traditional Persian Tea', 'Oil pastels on paper'],
 
     // right divider
-    [artwork5, 3.2, 3.2, new THREE.Vector3(6.5, 2.1, dividerArtworkOffset), 0],
-    [artwork7, 1.4, 2.15, new THREE.Vector3(6.5, 2.5, -dividerArtworkOffset), Math.PI]
+    [artwork5, 3.2, 3.2, new THREE.Vector3(6.5, 2.1, dividerArtworkOffset), 0, 'Sun flowers vase', 'Acrylic paint on canvas'],
+    [artwork7, 1.4, 2.15, new THREE.Vector3(6.5, 2.5, -dividerArtworkOffset), Math.PI, 'Customized Door hanging', 'made by air dry clay and acrylic paints']
   ]
 
-  galleryArtworks.forEach(([image, width, height, position, rotationY]) => {
-    addArtwork(image, width, height, position, rotationY)
+  galleryArtworks.forEach(([image, width, height, position, rotationY, title, medium]) => {
+    addArtwork(image, width, height, position, rotationY, title, medium)
   })
 
   // 6. Event Listeners for Movement & Looking
