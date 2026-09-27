@@ -1,5 +1,11 @@
-# Vue 3 + Vite
+# Virtual Art Gallery
 
-This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
+An interactive 3D gallery built with Three.js. Three.js is loaded from jsDelivr, so an internet connection is required.
 
-Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
+Because browsers block local images as WebGL textures from `file://` pages, serve this folder over HTTP with Python's built-in server:
+
+```sh
+python3 -m http.server 8000
+```
+
+Then open `http://localhost:8000`. Use W, A, S, D or the arrow keys to move, and click the gallery to look around with the mouse.

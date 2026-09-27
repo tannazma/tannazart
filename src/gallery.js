@@ -1,39 +1,34 @@
-<template>
-  <div class="gallery-container" ref="canvasContainer">
-    <div class="controls-overlay">
-      <h3>Virtual Art Gallery</h3>
-      <p>Use <strong>W, A, S, D</strong> or <strong>Arrow Keys</strong> to walk around. Move mouse to look around.</p>
-    </div>
-  </div>
-</template>
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.module.js'
 
-<script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue'
-import * as THREE from 'three'
-import artwork1 from '../assets/artwork1.jpg'
-import artwork2 from '../assets/artwork2.jpg'
-import artwork3 from '../assets/artwork3.jpg'
-import wallTextureImage from '../../wall-texture-4.jpg'
-import floorTextureImage from '../../floor-texture.jpg'
-import floorMedallionImage from '../../floor-texture-2.jpg'
-import dividerPatternImage from '../../wall-divider-texture.jpg'
-import ceilingTextureImage from '../../ceiling-texture.jpg'
+const artwork1 = './src/assets/artwork1.jpg'
+const artwork2 = './src/assets/artwork2.jpg'
+const artwork3 = './src/assets/artwork3.jpg'
+const wallTextureImage = './wall-texture-4.jpg'
+const floorTextureImage = './floor-texture.jpg'
+const floorMedallionImage = './floor-texture-2.jpg'
+const dividerPatternImage = './wall-divider-texture.jpg'
+const ceilingTextureImage = './ceiling-texture.jpg'
 
+function mountGallery(container) {
+  let camera
+  let renderer
+  let animationFrameId
+  let moveForward = false
+  let moveBackward = false
+  let moveLeft = false
+  let moveRight = false
+  let yaw = 0
+  let pitch = 0
+  const eventController = new AbortController()
+  const listenerOptions = { signal: eventController.signal }
 
-const canvasContainer = ref(null)
-let scene, camera, renderer, animationFrameId
-let moveForward = false, moveBackward = false, moveLeft = false, moveRight = false
-let yaw = 0, pitch = 0
-let eventController
-
-onMounted(() => {
   // 1. Scene & Camera Setup
-  scene = new THREE.Scene()
+  const scene = new THREE.Scene()
   scene.background = new THREE.Color(0xffffff)
 
   camera = new THREE.PerspectiveCamera(
     75,
-    canvasContainer.value.clientWidth / canvasContainer.value.clientHeight,
+    container.clientWidth / container.clientHeight,
     0.1,
     1000
   )
@@ -42,8 +37,8 @@ onMounted(() => {
   // 2. Renderer Setup
   renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.outputColorSpace = THREE.SRGBColorSpace
-  renderer.setSize(canvasContainer.value.clientWidth, canvasContainer.value.clientHeight)
-  canvasContainer.value.appendChild(renderer.domElement)
+  renderer.setSize(container.clientWidth, container.clientHeight)
+  container.appendChild(renderer.domElement)
 
   // 3. Lighting
   const ambientLight = new THREE.AmbientLight(0xffffff, 1)
@@ -53,7 +48,6 @@ onMounted(() => {
   const roomWidth = 20
   const roomHeight = 5
   const roomDepth = 24
-
   const textureLoader = new THREE.TextureLoader()
   const wallImageAspect = 5760 / 3840
   const wallTextureScale = 2
@@ -95,9 +89,12 @@ onMounted(() => {
   // Mark out the far room with a second floor texture and a narrow trim.
   const farRoomFloorZoneWidth = roomWidth - 2
   const farRoomFloorZoneDepth = roomDepth / 2 - 1
-  const farRoomFloorTexture = floorTexture.clone()
+  const farRoomFloorTexture = textureLoader.load(floorTextureImage)
+  farRoomFloorTexture.colorSpace = THREE.SRGBColorSpace
+  farRoomFloorTexture.wrapS = THREE.RepeatWrapping
+  farRoomFloorTexture.wrapT = THREE.RepeatWrapping
   farRoomFloorTexture.repeat.set(4, 3)
-  farRoomFloorTexture.needsUpdate = true
+  farRoomFloorTexture.anisotropy = renderer.capabilities.getMaxAnisotropy()
   const farRoomFloorZone = new THREE.Mesh(
     new THREE.PlaneGeometry(farRoomFloorZoneWidth, farRoomFloorZoneDepth),
     new THREE.MeshBasicMaterial({
@@ -145,7 +142,7 @@ onMounted(() => {
       toneMapped: false
     })
   )
-  floorMedallion.rotation.x = -Math.PI / 2 
+  floorMedallion.rotation.x = -Math.PI / 2
   floorMedallion.position.set(0, 0.02, floorZoneCenterZ)
   scene.add(floorMedallion)
 
@@ -169,7 +166,6 @@ onMounted(() => {
   ceilingTexture.wrapT = THREE.RepeatWrapping
   ceilingTexture.repeat.set(ceilingTileCountWidth, ceilingTileCountDepth)
   ceilingTexture.offset.set((1 - ceilingTileCountWidth) / 2, 0)
-  ceilingTexture.needsUpdate = true
 
   // Map the architectural image onto a flat ceiling.
   const ceiling = new THREE.Mesh(
@@ -213,10 +209,10 @@ onMounted(() => {
   // Central divider creates two exhibition zones with a wide passage between them.
   const dividerThickness = 0.25
   const dividerPanelGeo = new THREE.BoxGeometry(7, roomHeight, dividerThickness)
-  const texture = textureLoader.load(wallTextureImage)
-  texture.colorSpace = THREE.SRGBColorSpace
+  const dividerTexture = textureLoader.load(wallTextureImage)
+  dividerTexture.colorSpace = THREE.SRGBColorSpace
   const dividerEdgeMaterial = new THREE.MeshBasicMaterial({
-    map: texture,
+    map: dividerTexture,
     toneMapped: false
   })
   const createDividerMaterials = (faceMaterial) => [
@@ -265,61 +261,61 @@ onMounted(() => {
   const pictureLightOffsets = [-0.28, 0, 0.28]
   const addArtwork = (imageUrl, width, height, position, rotationY) => {
     textureLoader.load(imageUrl, (texture) => {
-        texture.colorSpace = THREE.SRGBColorSpace
-        const artGeo = new THREE.PlaneGeometry(width, height)
-        const artMat = new THREE.MeshStandardMaterial({
-          map: texture,
-          color: 0xffffff,
-          emissive: 0xffffff,
-          emissiveMap: texture,
-          emissiveIntensity: 0.35,
-          roughness: 0.9,
-          metalness: 0,
-          toneMapped: false
-        })
-        const artMesh = new THREE.Mesh(artGeo, artMat)
-        
-        // Add a simple frame border
-        const frameGeo = new THREE.BoxGeometry(width + 0.2, height + 0.2, 0.05)
-        const frameMat = new THREE.MeshBasicMaterial({ color: 0xffffff })
-        const frameMesh = new THREE.Mesh(frameGeo, frameMat)
-        // Keep the solid frame behind the artwork so it does not cover it.
-        frameMesh.position.z = -0.06
-        
-        const group = new THREE.Group()
-        group.add(artMesh)
-        group.add(frameMesh)
+      texture.colorSpace = THREE.SRGBColorSpace
+      const artGeo = new THREE.PlaneGeometry(width, height)
+      const artMat = new THREE.MeshStandardMaterial({
+        map: texture,
+        color: 0xffffff,
+        emissive: 0xffffff,
+        emissiveMap: texture,
+        emissiveIntensity: 0.35,
+        roughness: 0.9,
+        metalness: 0,
+        toneMapped: false
+      })
+      const artMesh = new THREE.Mesh(artGeo, artMat)
 
-        const pictureLightMaterial = new THREE.MeshBasicMaterial({ color: 0x88734e })
-        const pictureLight = new THREE.Mesh(
-          new THREE.BoxGeometry(Math.min(width * 0.7, 1.4), 0.06, 0.12),
+      // Add a simple frame border
+      const frameGeo = new THREE.BoxGeometry(width + 0.2, height + 0.2, 0.05)
+      const frameMat = new THREE.MeshBasicMaterial({ color: 0xffffff })
+      const frameMesh = new THREE.Mesh(frameGeo, frameMat)
+      // Keep the solid frame behind the artwork so it does not cover it.
+      frameMesh.position.z = -0.06
+
+      const group = new THREE.Group()
+      group.add(artMesh)
+      group.add(frameMesh)
+
+      const pictureLightMaterial = new THREE.MeshBasicMaterial({ color: 0x88734e })
+      const pictureLight = new THREE.Mesh(
+        new THREE.BoxGeometry(Math.min(width * 0.7, 1.4), 0.06, 0.12),
+        pictureLightMaterial
+      )
+      pictureLight.position.set(0, height / 2 + 0.14, 0.12)
+      group.add(pictureLight)
+
+      pictureLightOffsets.forEach((offset) => {
+        const lightX = width * offset
+        const lightHead = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.035, 0.06, 0.12, 12),
           pictureLightMaterial
         )
-        pictureLight.position.set(0, height / 2 + 0.14, 0.12)
-        group.add(pictureLight)
+        lightHead.position.set(lightX, height / 2 + 0.08, 0.12)
+        group.add(lightHead)
 
-        pictureLightOffsets.forEach((offset) => {
-          const lightX = width * offset
-          const lightHead = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.035, 0.06, 0.12, 12),
-            pictureLightMaterial
-          )
-          lightHead.position.set(lightX, height / 2 + 0.08, 0.12)
-          group.add(lightHead)
+        const lightTarget = new THREE.Object3D()
+        lightTarget.position.set(lightX, 0, 0.02)
+        group.add(lightTarget)
 
-          const lightTarget = new THREE.Object3D()
-          lightTarget.position.set(lightX, 0, 0.02)
-          group.add(lightTarget)
+        const spotlight = new THREE.SpotLight(0xfff0d8, 3, 5, Math.PI / 6, 0.85, 2)
+        spotlight.position.set(lightX, height / 2 + 0.22, 0.48)
+        spotlight.target = lightTarget
+        group.add(spotlight)
+      })
 
-          const spotlight = new THREE.SpotLight(0xfff0d8, 3, 5, Math.PI / 6, 0.85, 2)
-          spotlight.position.set(lightX, height / 2 + 0.22, 0.48)
-          spotlight.target = lightTarget
-          group.add(spotlight)
-        })
-        
-        group.position.copy(position)
-        group.rotation.y = rotationY
-        scene.add(group)
+      group.position.copy(position)
+      group.rotation.y = rotationY
+      scene.add(group)
     })
   }
 
@@ -333,17 +329,16 @@ onMounted(() => {
     // Left wall
     [artwork2, 2, 3, new THREE.Vector3(-9.9, 1.8, -7), Math.PI / 2],
     [artwork3, 2.4, 2, new THREE.Vector3(-9.9, 1.8, -2), Math.PI / 2],
-    
+
     // front wall
     [artwork1, 2.4, 2, new THREE.Vector3(-6, 1.8, -11.9), 0],
     [artwork2, 2, 3, new THREE.Vector3(-2, 1.8, -11.9), 0],
     [artwork3, 2.4, 2, new THREE.Vector3(2, 1.8, -11.9), 0],
     [artwork1, 2.4, 2, new THREE.Vector3(6, 1.8, -11.9), 0],
-    
+
     // right wall
     [artwork1, 2.4, 2, new THREE.Vector3(9.9, 1.8, -7), -Math.PI / 2],
     [artwork2, 2, 3, new THREE.Vector3(9.9, 1.8, -2), -Math.PI / 2],
-
 
     // right divider
     [artwork1, 2.4, 2, new THREE.Vector3(6.5, 1.8, dividerArtworkOffset), 0],
@@ -355,23 +350,23 @@ onMounted(() => {
   })
 
   // 6. Event Listeners for Movement & Looking
-  const onKeyDown = (e) => {
-    if (e.code === 'KeyW' || e.code === 'ArrowUp') moveForward = true
-    if (e.code === 'KeyS' || e.code === 'ArrowDown') moveBackward = true
-    if (e.code === 'KeyA' || e.code === 'ArrowLeft') moveLeft = true
-    if (e.code === 'KeyD' || e.code === 'ArrowRight') moveRight = true
+  const onKeyDown = (event) => {
+    if (event.code === 'KeyW' || event.code === 'ArrowUp') moveForward = true
+    if (event.code === 'KeyS' || event.code === 'ArrowDown') moveBackward = true
+    if (event.code === 'KeyA' || event.code === 'ArrowLeft') moveLeft = true
+    if (event.code === 'KeyD' || event.code === 'ArrowRight') moveRight = true
   }
 
-  const onKeyUp = (e) => {
-    if (e.code === 'KeyW' || e.code === 'ArrowUp') moveForward = false
-    if (e.code === 'KeyS' || e.code === 'ArrowDown') moveBackward = false
-    if (e.code === 'KeyA' || e.code === 'ArrowLeft') moveLeft = false
-    if (e.code === 'KeyD' || e.code === 'ArrowRight') moveRight = false
+  const onKeyUp = (event) => {
+    if (event.code === 'KeyW' || event.code === 'ArrowUp') moveForward = false
+    if (event.code === 'KeyS' || event.code === 'ArrowDown') moveBackward = false
+    if (event.code === 'KeyA' || event.code === 'ArrowLeft') moveLeft = false
+    if (event.code === 'KeyD' || event.code === 'ArrowRight') moveRight = false
   }
 
-  const onMouseMove = (e) => {
-    const movementX = e.movementX || 0
-    const movementY = e.movementY || 0
+  const onMouseMove = (event) => {
+    const movementX = event.movementX || 0
+    const movementY = event.movementY || 0
 
     yaw += movementX * 0.003
     pitch -= movementY * 0.003
@@ -384,32 +379,30 @@ onMounted(() => {
     camera.lookAt(camera.position.clone().add(direction))
   }
 
-  // One controller removes all input and resize listeners when the component unmounts.
-  eventController = new AbortController()
-  const listenerOptions = { signal: eventController.signal }
+  // One controller removes all input and resize listeners when the gallery unmounts.
   window.addEventListener('keydown', onKeyDown, listenerOptions)
   window.addEventListener('keyup', onKeyUp, listenerOptions)
-  canvasContainer.value.addEventListener('click', () => {
-    canvasContainer.value.requestPointerLock()
+  container.addEventListener('click', () => {
+    container.requestPointerLock()
   }, listenerOptions)
-  canvasContainer.value.addEventListener('mousemove', onMouseMove, listenerOptions)
+  container.addEventListener('mousemove', onMouseMove, listenerOptions)
 
   // 7. Animation Loop (Handles Walking physics)
   const animate = () => {
     animationFrameId = requestAnimationFrame(animate)
 
     const speed = 0.05
-    const dir = new THREE.Vector3()
-    camera.getWorldDirection(dir)
-    dir.y = 0
-    dir.normalize()
+    const direction = new THREE.Vector3()
+    camera.getWorldDirection(direction)
+    direction.y = 0
+    direction.normalize()
 
-    const sideDir = new THREE.Vector3(-dir.z, 0, dir.x)
+    const sideDirection = new THREE.Vector3(-direction.z, 0, direction.x)
 
-    if (moveForward) moveCamera(dir, speed)
-    if (moveBackward) moveCamera(dir, -speed)
-    if (moveRight) moveCamera(sideDir, speed)
-    if (moveLeft) moveCamera(sideDir, -speed)
+    if (moveForward) moveCamera(direction, speed)
+    if (moveBackward) moveCamera(direction, -speed)
+    if (moveRight) moveCamera(sideDirection, speed)
+    if (moveLeft) moveCamera(sideDirection, -speed)
 
     // Keep camera inside room boundaries
     camera.position.x = Math.max(-9, Math.min(9, camera.position.x))
@@ -421,48 +414,22 @@ onMounted(() => {
 
   // Keep the camera projection matched to the gallery container.
   const handleResize = () => {
-    if (!canvasContainer.value) return
-    camera.aspect = canvasContainer.value.clientWidth / canvasContainer.value.clientHeight
+    if (!container) return
+    camera.aspect = container.clientWidth / container.clientHeight
     camera.updateProjectionMatrix()
-    renderer.setSize(canvasContainer.value.clientWidth, canvasContainer.value.clientHeight)
+    renderer.setSize(container.clientWidth, container.clientHeight)
   }
   window.addEventListener('resize', handleResize, listenerOptions)
-})
 
-onBeforeUnmount(() => {
-  cancelAnimationFrame(animationFrameId)
-  eventController?.abort()
-  renderer?.dispose()
-  renderer?.domElement.remove()
-})
-</script>
-
-<style scoped>
-.gallery-container {
-  position: relative;
-  width: 100%;
-  height: 600px;
-  overflow: hidden;
-  border-radius: 8px;
-  cursor: crosshair;
+  return () => {
+    cancelAnimationFrame(animationFrameId)
+    eventController.abort()
+    renderer.dispose()
+    renderer.domElement.remove()
+  }
 }
 
-.controls-overlay {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(0, 0, 0, 0.75);
-  color: #fff;
-  padding: 10px 16px;
-  border-radius: 6px;
-  font-family: sans-serif;
-  font-size: 13px;
-  pointer-events: none;
-  z-index: 10;
-}
-
-.controls-overlay h3 {
-  margin: 0 0 5px 0;
-  font-size: 15px;
-}
-</style>
+const galleryContainer = document.querySelector('.gallery-container')
+if (!galleryContainer) throw new Error('Gallery container not found')
+if (!THREE) throw new Error('Three.js failed to load from its CDN')
+mountGallery(galleryContainer)

@@ -2,12 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="./public/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="./src/style.css" />
     <title>virtual-art-gallery</title>
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/src/main.js"></script>
+    <div id="app">
+      <div class="gallery-container">
+        <div class="controls-overlay">
+          <h3>Virtual Art Gallery</h3>
+          <p>Use <strong>W, A, S, D</strong> or <strong>Arrow Keys</strong> to walk around. Move mouse to look around.</p>
+        </div>
+      </div>
+    </div>
+    <script>
+      const galleryContainer = document.querySelector('.gallery-container')
+
+      if (window.location.protocol === 'file:') {
+        galleryContainer.innerHTML = `
+          <div class="local-file-notice">
+            <h1>Open the gallery over HTTP</h1>
+            <p>Browsers block local image textures in WebGL when this page is opened directly from a file.</p>
+            <p>Run <code>python3 -m http.server 8000</code> in the project folder, then open <a href="http://localhost:8000">http://localhost:8000</a>.</p>
+          </div>
+        `
+      } else {
+        import('./src/gallery.js').catch((error) => {
+          console.error('Could not start the gallery:', error)
+        })
+      }
+    </script>
   </body>
 </html>
