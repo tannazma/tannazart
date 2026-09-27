@@ -1,4 +1,5 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.module.js'
+import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.159.0/examples/jsm/webxr/VRButton.js'
 
 const artwork1 = './src/assets/arts/artwork1.jpg'
 const artwork2 = './src/assets/arts/artwork2.jpg'
@@ -15,7 +16,6 @@ const ceilingTextureImage = './src/assets/ceiling-texture.jpg'
 function mountGallery(container) {
   let camera
   let renderer
-  let animationFrameId
   let moveForward = false
   let moveBackward = false
   let moveLeft = false
@@ -35,13 +35,31 @@ function mountGallery(container) {
     0.1,
     1000
   )
-  camera.position.set(0, 1.6, 8) // Eye level height
+  camera.position.set(0, 1.6, 0) // Eye level height
+  const player = new THREE.Group()
+  player.position.set(0, 0, 8)
+  player.add(camera)
+  scene.add(player)
 
   // 2. Renderer Setup
   renderer = new THREE.WebGLRenderer({ antialias: true })
   renderer.outputColorSpace = THREE.SRGBColorSpace
+  renderer.xr.enabled = true
   renderer.setSize(container.clientWidth, container.clientHeight)
   container.appendChild(renderer.domElement)
+  const vrButton = VRButton.createButton(renderer)
+  document.body.appendChild(vrButton)
+
+  const xrControllers = [renderer.xr.getController(0), renderer.xr.getController(1)]
+  xrControllers.forEach((controller) => {
+    controller.addEventListener('connected', (event) => {
+      controller.userData.inputSource = event.data
+    })
+    controller.addEventListener('disconnected', () => {
+      controller.userData.inputSource = null
+    })
+    scene.add(controller)
+  })
 
   // 3. Lighting
   const ambientLight = new THREE.AmbientLight(0xffffff, 1)
@@ -246,9 +264,9 @@ function mountGallery(container) {
     new THREE.Box3().setFromObject(divider).expandByScalar(0.35)
   )
   const moveCamera = (direction, distance) => {
-    const destination = camera.position.clone().addScaledVector(direction, distance)
+    const destination = player.position.clone().addScaledVector(direction, distance)
     const collidesWithDivider = dividerCollisionBounds.some((bounds) => bounds.containsPoint(destination))
-    if (!collidesWithDivider) camera.position.copy(destination)
+    if (!collidesWithDivider) player.position.copy(destination)
   }
 
   // 5. Add Artworks to Walls
@@ -441,8 +459,6 @@ function mountGallery(container) {
 
   // 7. Animation Loop (Handles Walking physics)
   const animate = () => {
-    animationFrameId = requestAnimationFrame(animate)
-
     const speed = 0.05
     const direction = new THREE.Vector3()
     camera.getWorldDirection(direction)
@@ -456,13 +472,26 @@ function mountGallery(container) {
     if (moveRight) moveCamera(sideDirection, speed)
     if (moveLeft) moveCamera(sideDirection, -speed)
 
+    // Use either Quest thumbstick for smooth locomotion in VR.
+    xrControllers.forEach((controller) => {
+      const gamepad = controller.userData.inputSource?.gamepad
+      if (!gamepad || gamepad.axes.length < 4) return
+
+      const stickX = Math.abs(gamepad.axes[2]) > 0.15 ? gamepad.axes[2] : 0
+      const stickY = Math.abs(gamepad.axes[3]) > 0.15 ? gamepad.axes[3] : 0
+      if (!stickX && !stickY) return
+
+      moveCamera(direction, -stickY * speed)
+      moveCamera(sideDirection, stickX * speed)
+    })
+
     // Keep camera inside room boundaries
-    camera.position.x = Math.max(-9, Math.min(9, camera.position.x))
-    camera.position.z = Math.max(-11, Math.min(11, camera.position.z))
+    player.position.x = Math.max(-9, Math.min(9, player.position.x))
+    player.position.z = Math.max(-11, Math.min(11, player.position.z))
 
     renderer.render(scene, camera)
   }
-  animate()
+  renderer.setAnimationLoop(animate)
 
   // Keep the camera projection matched to the gallery container.
   const handleResize = () => {
@@ -474,8 +503,10 @@ function mountGallery(container) {
   window.addEventListener('resize', handleResize, listenerOptions)
 
   return () => {
-    cancelAnimationFrame(animationFrameId)
+    renderer.setAnimationLoop(null)
     eventController.abort()
+    vrButton.remove()
+    xrControllers.forEach((controller) => scene.remove(controller))
     renderer.dispose()
     renderer.domElement.remove()
   }
