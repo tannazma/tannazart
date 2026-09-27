@@ -69,7 +69,20 @@ function mountGallery(container) {
   const roomWidth = 20
   const roomHeight = 5
   const roomDepth = 24
-  const textureLoader = new THREE.TextureLoader()
+  const loadingOverlay = document.querySelector('#loading-overlay')
+  const loadingButton = document.querySelector('#loading-button')
+  const loadingManager = new THREE.LoadingManager()
+  loadingManager.onLoad = () => {
+    loadingButton.textContent = 'Enter Gallery'
+    loadingButton.disabled = false
+    loadingButton.style.cursor = 'pointer'
+    loadingButton.addEventListener('click', () => loadingOverlay.remove(), { once: true })
+  }
+  loadingManager.onError = () => {
+    loadingButton.textContent = 'Some artwork could not load'
+    loadingButton.disabled = true
+  }
+  const textureLoader = new THREE.TextureLoader(loadingManager)
   const wallImageAspect = 5760 / 3840
   const wallTextureScale = 2
 

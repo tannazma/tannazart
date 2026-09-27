@@ -323,6 +323,36 @@ code {
   font-size: 15px;
 }
 
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(24, 19, 16, 0.82);
+  z-index: 20;
+}
+
+.loading-button {
+  min-width: 190px;
+  padding: 13px 22px;
+  border: 1px solid #d2ad68;
+  border-radius: 4px;
+  background: #2a211c;
+  color: #f6e1ab;
+  font: 600 14px/1.2 Georgia, serif;
+  letter-spacing: 0.04em;
+  cursor: wait;
+}
+
+.loading-button:enabled {
+  cursor: pointer;
+}
+
+.loading-button:focus-visible {
+  outline: 2px solid #f6e1ab;
+  outline-offset: 3px;
+}
+
 .local-file-notice {
   box-sizing: border-box;
   display: grid;
