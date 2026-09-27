@@ -1,13 +1,13 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.module.js'
 
-const artwork1 = './src/assets/artwork1.jpg'
-const artwork2 = './src/assets/artwork2.jpg'
-const artwork3 = './src/assets/artwork3.jpg'
-const wallTextureImage = './wall-texture-4.jpg'
-const floorTextureImage = './floor-texture.jpg'
-const floorMedallionImage = './floor-texture-2.jpg'
-const dividerPatternImage = './wall-divider-texture.jpg'
-const ceilingTextureImage = './ceiling-texture.jpg'
+const artwork1 = './src/assets/arts/artwork1.jpg'
+const artwork2 = './src/assets/arts/artwork2.jpg'
+const artwork3 = './src/assets/arts/artwork3.jpg'
+const wallTextureImage = './src/assets/wall-texture-4.jpg'
+const floorTextureImage = './src/assets/floor-texture.jpg'
+const floorMedallionImage = './src/assets/floor-texture-2.jpg'
+const dividerPatternImage = './src/assets/wall-divider-texture.jpg'
+const ceilingTextureImage = './src/assets/ceiling-texture.jpg'
 
 function mountGallery(container) {
   let camera
