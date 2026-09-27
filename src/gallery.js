@@ -459,7 +459,9 @@ function mountGallery(container) {
     direction.x = Math.sin(yaw) * Math.cos(pitch)
     direction.y = Math.sin(pitch)
     direction.z = -Math.cos(yaw) * Math.cos(pitch)
-    camera.lookAt(camera.position.clone().add(direction))
+    const cameraPosition = new THREE.Vector3()
+    camera.getWorldPosition(cameraPosition)
+    camera.lookAt(cameraPosition.add(direction))
   }
 
   // One controller removes all input and resize listeners when the gallery unmounts.
@@ -468,7 +470,7 @@ function mountGallery(container) {
   container.addEventListener('click', () => {
     container.requestPointerLock()
   }, listenerOptions)
-  container.addEventListener('mousemove', onMouseMove, listenerOptions)
+  document.addEventListener('mousemove', onMouseMove, listenerOptions)
 
   // 7. Animation Loop (Handles Walking physics)
   const animate = () => {
