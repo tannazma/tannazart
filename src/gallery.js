@@ -332,7 +332,7 @@ function mountGallery(container) {
     exhibitTextY
   )
   exhibitTextY = drawExhibitParagraph(
-    'I hope you enjoy exploring each artwork up close. Visit my website to see more of my work: tannazart.com.',
+    'Enjoying the gallery? Explore more of my original artwork at tannazart.com, or visit my GitHub profile at github.com/tannazma to see more web and WebXR projects!',
     exhibitTextY
   )
 
@@ -596,7 +596,7 @@ function mountGallery(container) {
     [artwork2, 2.8, 4, new THREE.Vector3(-9.9, 2.3, -6), Math.PI / 2, 'The red lighthouse', 'Oil pastels on paper | September 2026'],
 
     // front wall
-    [artwork1, 3.2, 3.2, new THREE.Vector3(-2, 2.1, -11.9), 0, 'Daisies flowers', 'Oil pastels on paper'],
+    [artwork1, 3.2, 3.2, new THREE.Vector3(-2, 2.1, -11.9), 0, 'Daisies flowers', 'Oil pastels on paper | August 2026'],
     [artwork9, 2.4, 3.4, new THREE.Vector3(4.4, 2.1, -11.9), 0, 'By the window', 'Watercolor on paper | September 2026'],
 
     // right wall
@@ -604,7 +604,7 @@ function mountGallery(container) {
 
     // right divider
     [artwork5, 3.2, 3.2, new THREE.Vector3(6.5, 2.1, dividerArtworkOffset), 0, 'Sun flowers vase', 'Acrylic paint on canvas | May 2026'],
-    [artwork8, 1.4, 2.15, new THREE.Vector3(5, 2.5, -dividerArtworkOffset), Math.PI, 'Fried Egg in a pan', 'Oil pastels on paper | October 2026'],
+    [artwork8, 2.4, 3.3, new THREE.Vector3(7, 2.5, -dividerArtworkOffset), Math.PI, 'Fried Egg in a pan', 'Oil pastels on paper | October 2026'],
   ]
 
   const visitorEntries = [
@@ -612,7 +612,7 @@ function mountGallery(container) {
     { spot: { x: 4.4, z: -5.5, rotation: Math.PI }, modelUrl: './src/assets/visitors/visitor8.glb' },
     { spot: { x: 3.5, z: 5, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor9.glb' },
     { spot: { x: 4, z: -7, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor10.glb' },
-    { spot: { x: 6, z: -4, rotation: 0 }, modelUrl: './src/assets/visitors/visitor11.glb' },
+    { spot: { x: 8, z: -4, rotation: 0 }, modelUrl: './src/assets/visitors/visitor11.glb' },
     { spot: { x: 4.2, z: -7, rotation: -Math.PI  }, modelUrl: './src/assets/visitors/visitor12.glb' },
     { spot: { x: -4.4, z: -1, rotation: Math.PI }, modelUrl: './src/assets/visitors/visitor9.glb' },
     { spot: { x: -5, z: -5.5, rotation: 0 }, modelUrl: './src/assets/visitors/visitor8.glb' },
