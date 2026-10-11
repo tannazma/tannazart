@@ -21,7 +21,18 @@
         <div class="loading-overlay" id="loading-overlay">
           <div class="loading-stage">
             <div class="loading-visual" id="loading-visual" role="status" aria-label="Loading gallery">
-              <span class="loading-spinner" aria-hidden="true"></span>
+              <div
+                class="loading-progress"
+                id="loading-progress"
+                role="progressbar"
+                aria-label="Gallery loading progress"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+              >
+                <span class="loading-progress-fill" id="loading-progress-fill"></span>
+              </div>
+              <span class="loading-progress-label" id="loading-progress-label">0%</span>
             </div>
             <button class="loading-button" id="loading-button" type="button" hidden>
               Enter Gallery

@@ -94,8 +94,17 @@ function mountGallery(container) {
   const roomDepth = 24
   const loadingOverlay = document.querySelector('#loading-overlay')
   const loadingVisual = document.querySelector('#loading-visual')
+  const loadingProgress = document.querySelector('#loading-progress')
+  const loadingProgressFill = document.querySelector('#loading-progress-fill')
+  const loadingProgressLabel = document.querySelector('#loading-progress-label')
   const loadingButton = document.querySelector('#loading-button')
   const controlsOverlay = document.querySelector('.controls-overlay')
+  const updateLoadingProgress = (progress) => {
+    const value = Math.round(Math.max(0, Math.min(progress, 100)))
+    loadingProgress.setAttribute('aria-valuenow', value)
+    loadingProgressFill.style.width = `${value}%`
+    loadingProgressLabel.textContent = `${value}%`
+  }
   let resolveEnvironmentLoad
   const environmentLoaded = new Promise((resolve) => {
     resolveEnvironmentLoad = resolve
@@ -265,6 +274,79 @@ function mountGallery(container) {
   rightWall.position.set(roomWidth / 2, roomHeight / 2, 0)
   rightWall.rotation.y = -Math.PI / 2
   scene.add(rightWall)
+
+  const entranceCenterX = -2
+  const entranceWidth = 2.6
+  const entranceHeight = 2.8
+  const entranceZ = roomDepth / 2
+  const entranceLeft = entranceCenterX - entranceWidth / 2
+  const entranceRight = entranceCenterX + entranceWidth / 2
+  const addEntranceWallSection = (width, height, x, y) => {
+    const section = new THREE.Mesh(
+      new THREE.PlaneGeometry(width, height),
+      createWallMaterial(width, height)
+    )
+    section.position.set(x, y, entranceZ)
+    scene.add(section)
+  }
+
+  addEntranceWallSection(
+    entranceLeft + roomWidth / 2,
+    roomHeight,
+    (-roomWidth / 2 + entranceLeft) / 2,
+    roomHeight / 2
+  )
+  addEntranceWallSection(
+    roomWidth / 2 - entranceRight,
+    roomHeight,
+    (entranceRight + roomWidth / 2) / 2,
+    roomHeight / 2
+  )
+  addEntranceWallSection(
+    entranceWidth,
+    roomHeight - entranceHeight,
+    entranceCenterX,
+    (roomHeight + entranceHeight) / 2
+  )
+
+  const doorFrameMaterial = new THREE.MeshStandardMaterial({ color: 0x493326, roughness: 0.72 })
+  const doorFrameDepth = 0.18
+  const entranceHeader = new THREE.Mesh(
+    new THREE.BoxGeometry(entranceWidth + 0.14, 0.16, doorFrameDepth),
+    doorFrameMaterial
+  )
+  entranceHeader.position.set(entranceCenterX, entranceHeight, entranceZ - doorFrameDepth / 2)
+  scene.add(entranceHeader)
+
+  const door = new THREE.Group()
+  door.position.set(entranceLeft, 0, entranceZ - 0.08)
+  door.rotation.y = Math.PI / 3
+  const doorPanelMaterial = new THREE.MeshStandardMaterial({ color: 0x79563b, roughness: 0.62 })
+  const doorPanel = new THREE.Mesh(
+    new THREE.BoxGeometry(entranceWidth, entranceHeight - 0.08, 0.08),
+    doorPanelMaterial
+  )
+  doorPanel.position.set(entranceWidth / 2, (entranceHeight - 0.08) / 2, 0)
+  door.add(doorPanel)
+
+  const doorInsetMaterial = new THREE.MeshStandardMaterial({ color: 0x62432f, roughness: 0.7 })
+  for (const panelY of [0.78, 1.86]) {
+    const inset = new THREE.Mesh(
+      new THREE.BoxGeometry(entranceWidth * 0.68, 0.72, 0.025),
+      doorInsetMaterial
+    )
+    inset.position.set(entranceWidth / 2, panelY, 0.052)
+    door.add(inset)
+  }
+
+  const doorHandle = new THREE.Mesh(
+    new THREE.SphereGeometry(0.065, 16, 12),
+    new THREE.MeshStandardMaterial({ color: 0xc49a50, metalness: 0.72, roughness: 0.28 })
+  )
+  doorHandle.position.set(entranceWidth - 0.2, 1.35, 0.11)
+  door.add(doorHandle)
+  scene.add(door)
+
 
   // Central divider creates two exhibition zones with a wide passage between them.
   const dividerThickness = 0.25
