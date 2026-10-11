@@ -10,6 +10,7 @@ const artwork5 = './src/assets/arts/artwork5.png'
 const artwork6 = './src/assets/arts/artwork6.jpeg'
 const artwork8 = './src/assets/arts/artwork8.jpg'
 const artwork9 = './src/assets/arts/artwork9.jpg'
+const artwork11 = './src/assets/arts/artwork11.jpg'
 const wallTextureImage = './src/assets/wall-texture-4.jpg'
 const floorTextureImage = './src/assets/floor-texture.jpg'
 const floorMedallionImage = './src/assets/floor-texture-2.jpg'
@@ -45,6 +46,7 @@ function mountGallery(container) {
   let moveRight = false
   let yaw = 0
   let pitch = 0
+  let galleryEntered = false
   const eventController = new AbortController()
   const listenerOptions = { signal: eventController.signal }
 
@@ -70,6 +72,7 @@ function mountGallery(container) {
   renderer.xr.enabled = true
   renderer.setSize(container.clientWidth, container.clientHeight)
   container.appendChild(renderer.domElement)
+  renderer.domElement.style.pointerEvents = 'none'
   const vrButton = VRButton.createButton(renderer)
   document.body.appendChild(vrButton)
 
@@ -351,6 +354,12 @@ function mountGallery(container) {
   )
   exhibitPoster.position.z = 0.01
   exhibitPanel.add(exhibitPoster)
+  const exhibitLineLight = new THREE.Mesh(
+    new THREE.PlaneGeometry(4.15, 0.025),
+    new THREE.MeshBasicMaterial({ color: 0xffedc7, toneMapped: false })
+  )
+  exhibitLineLight.position.set(0, 1.78, 1)
+  exhibitPanel.add(exhibitLineLight)
   exhibitPanel.position.set(-9.84, 1, 6)
   exhibitPanel.rotation.y = Math.PI / 2
   scene.add(exhibitPanel)
@@ -435,6 +444,7 @@ function mountGallery(container) {
     new THREE.Box3().setFromObject(divider).expandByScalar(0.35)
   )
   const moveCamera = (direction, distance) => {
+    if (!galleryEntered) return
     const destination = player.position.clone().addScaledVector(direction, distance)
     const collidesWithDivider = dividerCollisionBounds.some((bounds) => bounds.containsPoint(destination))
     if (!collidesWithDivider) player.position.copy(destination)
@@ -607,12 +617,15 @@ function mountGallery(container) {
 
     // right wall
     [artwork3, 2.8, 4, new THREE.Vector3(9.9, 2.1, -6), -Math.PI / 2, 'Traditional Persian Tea', 'Oil pastels on paper | September 2026'],
-
+    
     // right divider
     [artwork5, 3.2, 3.2, new THREE.Vector3(6.5, 2.1, dividerArtworkOffset), 0, 'Sun flowers vase', 'Acrylic paint on canvas | May 2026'],
     [artwork8, 2.4, 3.3, new THREE.Vector3(7, 2.5, -dividerArtworkOffset), Math.PI, 'Fried Egg in a pan', 'Oil pastels on paper | October 2026'],
+    
+    // First right wall
+    [artwork11, 1.8, 2.8, new THREE.Vector3(9.9, 2.2, 6), -Math.PI / 2, 'Grandma\'s front door', 'Watercolor on paper | October 2026'],
   ]
-
+  
   const visitorEntries = [
     { spot: { x: -8, z: -6, rotation: -Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor7.glb' },
     { spot: { x: 4.4, z: -5.5, rotation: Math.PI }, modelUrl: './src/assets/visitors/visitor8.glb' },
@@ -720,6 +733,12 @@ function mountGallery(container) {
     loadingButton.hidden = false
     loadingButton.disabled = false
     loadingButton.addEventListener('click', () => {
+      galleryEntered = true
+      moveForward = false
+      moveBackward = false
+      moveLeft = false
+      moveRight = false
+      renderer.domElement.style.pointerEvents = 'auto'
       controlsOverlay.hidden = false
       loadingOverlay.remove()
     }, { once: true })
@@ -729,6 +748,7 @@ function mountGallery(container) {
 
   // 6. Event Listeners for Movement & Looking
   const onKeyDown = (event) => {
+    if (!galleryEntered) return
     if (event.code === 'KeyW' || event.code === 'ArrowUp') moveForward = true
     if (event.code === 'KeyS' || event.code === 'ArrowDown') moveBackward = true
     if (event.code === 'KeyA' || event.code === 'ArrowLeft') moveLeft = true
@@ -743,6 +763,7 @@ function mountGallery(container) {
   }
 
   const onMouseMove = (event) => {
+    if (!galleryEntered) return
     const movementX = event.movementX || 0
     const movementY = event.movementY || 0
 
@@ -763,7 +784,7 @@ function mountGallery(container) {
   window.addEventListener('keydown', onKeyDown, listenerOptions)
   window.addEventListener('keyup', onKeyUp, listenerOptions)
   container.addEventListener('click', () => {
-    container.requestPointerLock()
+    if (galleryEntered) container.requestPointerLock()
   }, listenerOptions)
   document.addEventListener('mousemove', onMouseMove, listenerOptions)
 
@@ -784,17 +805,19 @@ function mountGallery(container) {
     if (moveLeft) moveCamera(sideDirection, -speed)
 
     // Use either Quest thumbstick for smooth locomotion in VR.
-    xrControllers.forEach((controller) => {
-      const gamepad = controller.userData.inputSource?.gamepad
-      if (!gamepad || gamepad.axes.length < 4) return
+    if (galleryEntered) {
+      xrControllers.forEach((controller) => {
+        const gamepad = controller.userData.inputSource?.gamepad
+        if (!gamepad || gamepad.axes.length < 4) return
 
-      const stickX = Math.abs(gamepad.axes[2]) > 0.15 ? gamepad.axes[2] : 0
-      const stickY = Math.abs(gamepad.axes[3]) > 0.15 ? gamepad.axes[3] : 0
-      if (!stickX && !stickY) return
+        const stickX = Math.abs(gamepad.axes[2]) > 0.15 ? gamepad.axes[2] : 0
+        const stickY = Math.abs(gamepad.axes[3]) > 0.15 ? gamepad.axes[3] : 0
+        if (!stickX && !stickY) return
 
-      moveCamera(direction, -stickY * speed)
-      moveCamera(sideDirection, stickX * speed)
-    })
+        moveCamera(direction, -stickY * speed)
+        moveCamera(sideDirection, stickX * speed)
+      })
+    }
 
     // Keep camera inside room boundaries
     player.position.x = Math.max(-9, Math.min(9, player.position.x))
