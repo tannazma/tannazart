@@ -15,6 +15,27 @@ const floorTextureImage = './src/assets/floor-texture.jpg'
 const floorMedallionImage = './src/assets/floor-texture-2.jpg'
 const ceilingTextureImage = './src/assets/ceiling-texture.jpg'
 
+const moveHandToTarget = (root, joints, hand, target) => {
+  for (let iteration = 0; iteration < 18; iteration += 1) {
+    for (const joint of joints) {
+      root.updateMatrixWorld(true)
+      const jointPosition = joint.getWorldPosition(new THREE.Vector3())
+      const handDirection = hand.getWorldPosition(new THREE.Vector3()).sub(jointPosition).normalize()
+      const targetDirection = target.clone().sub(jointPosition).normalize()
+      const rotationAxis = new THREE.Vector3().crossVectors(handDirection, targetDirection)
+      if (rotationAxis.lengthSq() < 1e-8) continue
+
+      const angle = Math.acos(THREE.MathUtils.clamp(handDirection.dot(targetDirection), -1, 1))
+      const worldRotation = new THREE.Quaternion().setFromAxisAngle(rotationAxis.normalize(), angle)
+      const parentRotation = joint.parent.getWorldQuaternion(new THREE.Quaternion())
+      const localRotation = parentRotation.clone().invert()
+        .multiply(worldRotation)
+        .multiply(parentRotation)
+      joint.quaternion.premultiply(localRotation)
+    }
+  }
+}
+
 function mountGallery(container) {
   let camera
   let renderer
@@ -457,7 +478,7 @@ function mountGallery(container) {
 
     // right divider
     [artwork5, 3.2, 3.2, new THREE.Vector3(6.5, 2.1, dividerArtworkOffset), 0, 'Sun flowers vase', 'Acrylic paint on canvas'],
-    [artwork8, 1.4, 2.15, new THREE.Vector3(5, 2.5, -dividerArtworkOffset), Math.PI, 'Customized Door hanging', 'made by air dry clay and acrylic paints'],
+    [artwork8, 1.4, 2.15, new THREE.Vector3(5, 2.5, -dividerArtworkOffset), Math.PI, 'Fried Egg in a pan', 'Oil pastels on paper'],
   ]
 
   const visitorEntries = [
@@ -465,7 +486,8 @@ function mountGallery(container) {
     { spot: { x: 4.4, z: -9.5, rotation: Math.PI }, modelUrl: './src/assets/visitors/visitor2.glb' },
     { spot: { x: 6.5, z: 2.2, rotation: Math.PI }, modelUrl: './src/assets/visitors/visitor3.glb' },
     { spot: { x: 13, z: -4, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor4.glb' },
-    { spot: { x: 8.2, z: -6, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor5.glb' },
+    { spot: { x: 4, z: -1.8, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor5.glb' },
+    { spot: { x: 8.2, z: -6, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor6.glb' },
   ]
   const galleryVisitors = []
 
@@ -477,6 +499,30 @@ function mountGallery(container) {
       absoluteUrl,
       (gltf) => {
         const visitor = gltf.scene
+        if (modelUrl.endsWith('/visitor6.glb')) {
+          const hips = visitor.getObjectByName('Hips')
+          const arms = [
+            ['LeftShoulder', 'LeftArm', 'LeftForeArm', 'LeftHand'],
+            ['RightShoulder', 'RightArm', 'RightForeArm', 'RightHand']
+          ].map(([shoulderName, armName, forearmName, handName]) => ({
+            shoulder: visitor.getObjectByName(shoulderName),
+            arm: visitor.getObjectByName(armName),
+            forearm: visitor.getObjectByName(forearmName),
+            hand: visitor.getObjectByName(handName)
+          }))
+
+          if (hips && arms.every(({ shoulder, arm, forearm, hand }) => shoulder && arm && forearm && hand)) {
+            visitor.updateMatrixWorld(true)
+            const hipsPosition = hips.getWorldPosition(new THREE.Vector3())
+            arms.forEach(({ shoulder, arm, forearm, hand }) => {
+              const shoulderX = shoulder.getWorldPosition(new THREE.Vector3()).x
+              const side = Math.sign(shoulderX - hipsPosition.x)
+              const target = hipsPosition.clone().add(new THREE.Vector3(side * 0.14, 0.12, 0.1))
+              moveHandToTarget(visitor, [forearm, arm, shoulder], hand, target)
+            })
+          }
+        }
+
         const boundingBox = new THREE.Box3().setFromObject(visitor)
         const modelSize = new THREE.Vector3()
         boundingBox.getSize(modelSize)
