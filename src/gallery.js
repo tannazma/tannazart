@@ -85,7 +85,7 @@ function mountGallery(container) {
   })
 
   // 3. Lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.54)
   scene.add(ambientLight)
 
   // 4. Build Room (Floor, Ceiling, Walls)
@@ -122,6 +122,7 @@ function mountGallery(container) {
   }
   const textureLoader = new THREE.TextureLoader(loadingManager)
   const artworkTextureLoader = new THREE.TextureLoader()
+  const roomSurfaceTint = 0xe0e0e0
   const wallImageAspect = 5760 / 3840
   const wallTextureScale = 2
 
@@ -138,6 +139,7 @@ function mountGallery(container) {
 
     return new THREE.MeshBasicMaterial({
       map: texture,
+      color: roomSurfaceTint,
       toneMapped: false,
       side: doubleSided ? THREE.DoubleSide : THREE.FrontSide
     })
@@ -153,6 +155,7 @@ function mountGallery(container) {
   floorTexture.anisotropy = renderer.capabilities.getMaxAnisotropy()
   const floorMat = new THREE.MeshBasicMaterial({
     map: floorTexture,
+    color: roomSurfaceTint,
     toneMapped: false
   })
   const floor = new THREE.Mesh(floorGeo, floorMat)
@@ -172,6 +175,7 @@ function mountGallery(container) {
     new THREE.PlaneGeometry(farRoomFloorZoneWidth, farRoomFloorZoneDepth),
     new THREE.MeshBasicMaterial({
       map: farRoomFloorTexture,
+      color: roomSurfaceTint,
       toneMapped: false
     })
   )
@@ -212,6 +216,7 @@ function mountGallery(container) {
     new THREE.CircleGeometry(4.25, 128),
     new THREE.MeshBasicMaterial({
       map: floorMedallionTexture,
+      color: roomSurfaceTint,
       toneMapped: false
     })
   )
@@ -245,6 +250,7 @@ function mountGallery(container) {
     new THREE.PlaneGeometry(roomWidth, roomDepth),
     new THREE.MeshBasicMaterial({
       map: ceilingTexture,
+      color: roomSurfaceTint,
       toneMapped: false,
       side: THREE.DoubleSide
     })
