@@ -2,19 +2,19 @@ import * as THREE from 'three'
 import { VRButton } from 'three/addons/webxr/VRButton.js'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
-const artwork1 = './src/assets/arts/artwork1.jpg'
-const artwork2 = './src/assets/arts/artwork2.jpg'
-const artwork3 = './src/assets/arts/artwork3.jpg'
-const artwork4 = './src/assets/arts/artwork4.jpeg'
-const artwork5 = './src/assets/arts/artwork5.png'
-const artwork6 = './src/assets/arts/artwork6.jpeg'
-const artwork8 = './src/assets/arts/artwork8.jpg'
-const artwork9 = './src/assets/arts/artwork9.jpg'
-const artwork11 = './src/assets/arts/artwork11.jpg'
-const wallTextureImage = './src/assets/wall-texture-4.jpg'
-const floorTextureImage = './src/assets/floor-texture.jpg'
-const floorMedallionImage = './src/assets/floor-texture-2.jpg'
-const ceilingTextureImage = './src/assets/ceiling-texture.jpg'
+const artwork1 = './src/assets/arts/artwork1.webp'
+const artwork2 = './src/assets/arts/artwork2.webp'
+const artwork3 = './src/assets/arts/artwork3.webp'
+const artwork4 = './src/assets/arts/artwork4.webp'
+const artwork5 = './src/assets/arts/artwork5.webp'
+const artwork6 = './src/assets/arts/artwork6.webp'
+const artwork8 = './src/assets/arts/artwork8.webp'
+const artwork9 = './src/assets/arts/artwork9.webp'
+const artwork10 = './src/assets/arts/artwork10.webp'
+const wallTextureImage = './src/assets/wall-texture-4.webp'
+const floorTextureImage = './src/assets/floor-texture.webp'
+const floorMedallionImage = './src/assets/floor-texture-2.webp'
+const ceilingTextureImage = './src/assets/ceiling-texture.webp'
 
 const moveHandToTarget = (root, joints, hand, target) => {
   for (let iteration = 0; iteration < 18; iteration += 1) {
@@ -358,7 +358,7 @@ function mountGallery(container) {
     new THREE.PlaneGeometry(4.15, 0.025),
     new THREE.MeshBasicMaterial({ color: 0xffedc7, toneMapped: false })
   )
-  exhibitLineLight.position.set(0, 1.78, 1)
+  exhibitLineLight.position.set(0, 2, -0.145)
   exhibitPanel.add(exhibitLineLight)
   exhibitPanel.position.set(-9.84, 1, 6)
   exhibitPanel.rotation.y = Math.PI / 2
@@ -623,18 +623,18 @@ function mountGallery(container) {
     [artwork8, 2.4, 3.3, new THREE.Vector3(7, 2.5, -dividerArtworkOffset), Math.PI, 'Fried Egg in a pan', 'Oil pastels on paper | October 2026'],
     
     // First right wall
-    [artwork11, 1.8, 2.8, new THREE.Vector3(9.9, 2.2, 6), -Math.PI / 2, 'Grandma\'s front door', 'Watercolor on paper | October 2026'],
+    [artwork10, 1.8, 2.8, new THREE.Vector3(9.9, 2.2, 6), -Math.PI / 2, 'Grandma\'s front door', 'Watercolor on paper | October 2026'],
   ]
   
   const visitorEntries = [
-    { spot: { x: -8, z: -6, rotation: -Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor7.glb' },
-    { spot: { x: 4.4, z: -5.5, rotation: Math.PI }, modelUrl: './src/assets/visitors/visitor8.glb' },
-    { spot: { x: 3.5, z: 5, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor9.glb' },
-    { spot: { x: 4, z: -7, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor10.glb' },
-    { spot: { x: 8, z: -4, rotation: 0 }, modelUrl: './src/assets/visitors/visitor11.glb' },
-    { spot: { x: 4.2, z: -7, rotation: -Math.PI  }, modelUrl: './src/assets/visitors/visitor12.glb' },
-    { spot: { x: -4.4, z: -1, rotation: Math.PI }, modelUrl: './src/assets/visitors/visitor9.glb' },
-    { spot: { x: -5, z: -5.5, rotation: 0 }, modelUrl: './src/assets/visitors/visitor8.glb' },
+    { spot: { x: -8, z: -6, rotation: -Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor1.glb' },
+    { spot: { x: 4.4, z: -5.5, rotation: Math.PI }, modelUrl: './src/assets/visitors/visitor2.glb' },
+    { spot: { x: 3.5, z: 5, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor3.glb' },
+    { spot: { x: 4, z: -7, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor4.glb' },
+    { spot: { x: 8, z: -4, rotation: 0 }, modelUrl: './src/assets/visitors/visitor5.glb' },
+    { spot: { x: 4.2, z: -7, rotation: -Math.PI  }, modelUrl: './src/assets/visitors/visitor6.glb' },
+    { spot: { x: -4.4, z: -1, rotation: Math.PI }, modelUrl: './src/assets/visitors/visitor3.glb' },
+    { spot: { x: -5, z: -5.5, rotation: 0 }, modelUrl: './src/assets/visitors/visitor2.glb' },
   ]
   const galleryVisitors = []
 
