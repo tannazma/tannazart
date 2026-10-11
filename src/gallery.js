@@ -9,7 +9,6 @@ const artwork5 = './src/assets/arts/artwork5.png'
 const artwork6 = './src/assets/arts/artwork6.jpeg'
 const artwork8 = './src/assets/arts/artwork8.jpg'
 const artwork9 = './src/assets/arts/artwork9.jpg'
-const artwork10 = './src/assets/arts/artwork10.jpg'
 const wallTextureImage = './src/assets/wall-texture-4.jpg'
 const floorTextureImage = './src/assets/floor-texture.jpg'
 const floorMedallionImage = './src/assets/floor-texture-2.jpg'
@@ -64,7 +63,7 @@ function mountGallery(container) {
   })
 
   // 3. Lighting
-  const ambientLight = new THREE.AmbientLight(0xffffff, 1)
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.6)
   scene.add(ambientLight)
 
   // 4. Build Room (Floor, Ceiling, Walls)
@@ -75,8 +74,6 @@ function mountGallery(container) {
   const loadingVisual = document.querySelector('#loading-visual')
   const loadingButton = document.querySelector('#loading-button')
   const controlsOverlay = document.querySelector('.controls-overlay')
-  const loadingError = document.querySelector('#loading-error')
-  let loadingFailed = false
   let resolveEnvironmentLoad
   const environmentLoaded = new Promise((resolve) => {
     resolveEnvironmentLoad = resolve
@@ -85,8 +82,8 @@ function mountGallery(container) {
   loadingManager.onLoad = () => {
     resolveEnvironmentLoad()
   }
-  loadingManager.onError = () => {
-    loadingFailed = true
+  loadingManager.onError = (url) => {
+    console.error(`Could not load texture: ${url}`)
   }
   const textureLoader = new THREE.TextureLoader(loadingManager)
   const artworkTextureLoader = new THREE.TextureLoader()
@@ -352,7 +349,7 @@ function mountGallery(container) {
         color: 0xffffff,
         emissive: 0xffffff,
         emissiveMap: texture,
-        emissiveIntensity: 0.35,
+        emissiveIntensity: 0.4,
         roughness: 0.9,
         metalness: 0,
         toneMapped: false
@@ -382,29 +379,53 @@ function mountGallery(container) {
       )
       group.add(description)
 
-      const pictureLightMaterial = new THREE.MeshBasicMaterial({ color: 0x88734e })
-      const pictureLight = new THREE.Mesh(
-        new THREE.BoxGeometry(Math.min(width * 0.7, 1.4), 0.06, 0.12),
-        pictureLightMaterial
+      const lampFrameMaterial = new THREE.MeshStandardMaterial({
+        color: 0xf4f1e8,
+        roughness: 0.32,
+        metalness: -2
+      })
+      const lampLensMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffe8bd,
+        toneMapped: false
+      })
+      const pictureLightRail = new THREE.Mesh(
+        new THREE.BoxGeometry(Math.max(width * 0.68, 0.95), 0.045, 0.055),
+        lampFrameMaterial
       )
-      pictureLight.position.set(0, height / 2 + 0.14, 0.12)
-      group.add(pictureLight)
+      pictureLightRail.position.set(0, height / 2 + 0.38, 0.05)
+      group.add(pictureLightRail)
 
       pictureLightOffsets.forEach((offset) => {
         const lightX = width * offset
-        const lightHead = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.035, 0.06, 0.12, 12),
-          pictureLightMaterial
-        )
-        lightHead.position.set(lightX, height / 2 + 0.08, 0.12)
-        group.add(lightHead)
-
         const lightTarget = new THREE.Object3D()
         lightTarget.position.set(lightX, 0, 0.02)
         group.add(lightTarget)
 
-        const spotlight = new THREE.SpotLight(0xfff0d8, 3, 5, Math.PI / 6, 0.85, 2)
-        spotlight.position.set(lightX, height / 2 + 0.22, 0.48)
+        const spotlightPosition = new THREE.Vector3(lightX, height / 2 + 0.18, 0.05)
+        const beamDirection = lightTarget.position.clone().sub(spotlightPosition).normalize()
+
+        const lampMount = new THREE.Mesh(
+          new THREE.BoxGeometry(0.035, 0.08, 0.035),
+          lampFrameMaterial
+        )
+        lampMount.position.set(lightX, height / 2 + 0.38, 0.05)
+        group.add(lampMount)
+
+        const lampBody = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.07, 0.105, 0.16, 16),
+          lampFrameMaterial
+        )
+        lampBody.position.copy(spotlightPosition).addScaledVector(beamDirection, -0.08)
+        lampBody.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), beamDirection)
+        group.add(lampBody)
+
+        const lampLens = new THREE.Mesh(new THREE.CircleGeometry(0.068, 16), lampLensMaterial)
+        lampLens.position.copy(spotlightPosition).addScaledVector(beamDirection, 0.085)
+        lampLens.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), beamDirection)
+        group.add(lampLens)
+
+        const spotlight = new THREE.SpotLight(0xfff4df, 14, 9, Math.PI / 3, 0.8, 0.3)
+        spotlight.position.copy(spotlightPosition)
         spotlight.target = lightTarget
         group.add(spotlight)
       })
@@ -428,7 +449,7 @@ function mountGallery(container) {
 
     // front wall
     [artwork1, 3.2, 3.2, new THREE.Vector3(-2, 2.1, -11.9), 0, 'Daisies flowers', 'Oil pastels on paper'],
-    [artwork9, 2.4, 3.4, new THREE.Vector3(4.4, 2.1, -11.9), 0, 'Artwork 9', 'Original artwork'],
+    [artwork9, 2.4, 3.4, new THREE.Vector3(4.4, 2.1, -11.9), 0, 'By the window', 'Water color on paper'],
 
     // right wall
     [artwork3, 2.8, 4, new THREE.Vector3(9.9, 2.1, -6), -Math.PI / 2, 'Traditional Persian Tea', 'Oil pastels on paper'],
@@ -445,19 +466,11 @@ function mountGallery(container) {
       try {
         await addArtwork(image, width, height, position, rotationY, title, medium)
       } catch (error) {
-        loadingFailed = true
         console.error(`Could not load artwork: ${title}`, error)
       }
     }
 
     loadingVisual.hidden = true
-    if (loadingFailed) {
-      if (loadingError) {
-        loadingError.hidden = false
-        return
-      }
-    }
-
     loadingButton.hidden = false
     loadingButton.disabled = false
     loadingButton.addEventListener('click', () => {
