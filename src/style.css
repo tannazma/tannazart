@@ -302,6 +302,22 @@ code {
   overflow: hidden;
   border-radius: 8px;
   cursor: crosshair;
+  color: #fff;
+  background: #000;
+  .button {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 10;
+    padding: 8px 12px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    font-family: sans-serif;
+    font-size: 13px;
+    pointer-events: auto;
+    cursor: pointer;
+  }
 }
 
 .controls-overlay {
@@ -328,18 +344,58 @@ code {
   inset: 0;
   display: grid;
   place-items: center;
-  background: rgba(24, 19, 16, 0.82);
+  background: rgba(119, 122, 120, 0.82);
   z-index: 20;
 }
 
+.loading-stage {
+  position: relative;
+  display: grid;
+  width: min(240px, calc(100% - 32px));
+  height: 200px;
+  place-items: center;
+}
+
+.loading-stage > * {
+  grid-area: 1 / 1;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.loading-visual {
+  position: relative;
+  display: flex;
+  width: 260px;
+  min-height: 120px;
+  flex-direction: column;
+  place-items: center;
+  justify-content: center;
+  gap: 16px;
+  animation: loading-arrive 700ms ease-out both;
+}
+
+.loading-spinner {
+  display: block;
+  width: 64px;
+  height: 64px;
+  box-sizing: border-box;
+  border: 3px solid rgba(255, 255, 255, 0.32);
+  border-top-color: #f4d58e;
+  border-radius: 50%;
+  animation: loading-spin 1.4s linear infinite;
+}
+
 .loading-button {
+  min-height: 48px;
   min-width: 190px;
   padding: 13px 22px;
-  border: 1px solid #d2ad68;
+  border: 1px solid #0a0a0a;
   border-radius: 4px;
   background: #2a211c;
-  color: #f6e1ab;
-  font: 600 14px/1.2 Georgia, serif;
+  color: #b5bfb5;
+  font: 16px/1.5 system-ui, sans-serif;
   letter-spacing: 0.04em;
   cursor: wait;
 }
@@ -351,6 +407,33 @@ code {
 .loading-button:focus-visible {
   outline: 2px solid #f6e1ab;
   outline-offset: 3px;
+}
+
+.loading-error {
+  box-sizing: border-box;
+  max-width: min(320px, calc(100% - 32px));
+  padding: 12px 16px;
+  background: #2a211c;
+  color: #fff;
+  font: 15px/1.4 system-ui, sans-serif;
+}
+
+@keyframes loading-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes loading-arrive {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-visual,
+  .loading-spinner {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+
 }
 
 .local-file-notice {

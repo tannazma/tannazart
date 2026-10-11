@@ -11,11 +11,19 @@
     <div id="app">
       <div class="gallery-container">
         <div class="loading-overlay" id="loading-overlay">
-          <button class="loading-button" id="loading-button" type="button" disabled>
-            Loading gallery...
-          </button>
+          <div class="loading-stage" id="loading-stage">
+            <div class="loading-visual" id="loading-visual" role="status" aria-label="Loading gallery">
+              <span class="loading-spinner" aria-hidden="true"></span>
+            </div>
+            <button class="loading-button" id="loading-button" type="button" hidden>
+              Enter Gallery
+            </button>
+            <!-- <p class="loading-error" id="loading-error" role="alert" hidden>
+              Some gallery artwork could not load.
+            </p> -->
+          </div>
         </div>
-        <div class="controls-overlay">
+        <div class="controls-overlay" hidden>
           <h3>Virtual Art Gallery</h3>
           <p>Use <strong>W, A, S, D</strong> or <strong>Arrow Keys</strong> to walk around. Move mouse to look around.</p>
         </div>

@@ -7,7 +7,9 @@ const artwork3 = './src/assets/arts/artwork3.jpg'
 const artwork4 = './src/assets/arts/artwork4.jpeg'
 const artwork5 = './src/assets/arts/artwork5.png'
 const artwork6 = './src/assets/arts/artwork6.jpeg'
-const artwork7 = './src/assets/arts/artwork7.jpeg'
+const artwork8 = './src/assets/arts/artwork8.jpg'
+const artwork9 = './src/assets/arts/artwork9.jpg'
+const artwork10 = './src/assets/arts/artwork10.jpg'
 const wallTextureImage = './src/assets/wall-texture-4.jpg'
 const floorTextureImage = './src/assets/floor-texture.jpg'
 const floorMedallionImage = './src/assets/floor-texture-2.jpg'
@@ -70,19 +72,24 @@ function mountGallery(container) {
   const roomHeight = 5
   const roomDepth = 24
   const loadingOverlay = document.querySelector('#loading-overlay')
+  const loadingVisual = document.querySelector('#loading-visual')
   const loadingButton = document.querySelector('#loading-button')
+  const controlsOverlay = document.querySelector('.controls-overlay')
+  const loadingError = document.querySelector('#loading-error')
+  let loadingFailed = false
+  let resolveEnvironmentLoad
+  const environmentLoaded = new Promise((resolve) => {
+    resolveEnvironmentLoad = resolve
+  })
   const loadingManager = new THREE.LoadingManager()
   loadingManager.onLoad = () => {
-    loadingButton.textContent = 'Enter Gallery'
-    loadingButton.disabled = false
-    loadingButton.style.cursor = 'pointer'
-    loadingButton.addEventListener('click', () => loadingOverlay.remove(), { once: true })
+    resolveEnvironmentLoad()
   }
   loadingManager.onError = () => {
-    loadingButton.textContent = 'Some artwork could not load'
-    loadingButton.disabled = true
+    loadingFailed = true
   }
   const textureLoader = new THREE.TextureLoader(loadingManager)
+  const artworkTextureLoader = new THREE.TextureLoader()
   const wallImageAspect = 5760 / 3840
   const wallTextureScale = 2
 
@@ -335,8 +342,9 @@ function mountGallery(container) {
     return new THREE.MeshBasicMaterial({ map: texture, toneMapped: false })
   }
 
-  const addArtwork = (imageUrl, width, height, position, rotationY, title, medium) => {
-    textureLoader.load(imageUrl, (texture) => {
+  const addArtwork = (imageUrl, width, height, position, rotationY, title, medium) =>
+    new Promise((resolve, reject) => {
+      artworkTextureLoader.load(imageUrl, (texture) => {
       texture.colorSpace = THREE.SRGBColorSpace
       const artGeo = new THREE.PlaneGeometry(width, height)
       const artMat = new THREE.MeshStandardMaterial({
@@ -404,8 +412,9 @@ function mountGallery(container) {
       group.position.copy(position)
       group.rotation.y = rotationY
       scene.add(group)
+      resolve()
+      }, undefined, reject)
     })
-  }
 
   // Reuse the existing artwork files to fill the gallery layout.
   const dividerArtworkOffset = dividerThickness / 2 + 0.095
@@ -418,19 +427,46 @@ function mountGallery(container) {
     [artwork2, 2.8, 4, new THREE.Vector3(-9.9, 2.3, -6), Math.PI / 2, 'The red lighthouse', 'Oil pastels on paper'],
 
     // front wall
-    [artwork1, 3.2, 3.2, new THREE.Vector3(0, 2.1, -11.9), 0, 'Daisies flowers', 'Oil pastels on paper'],
+    [artwork1, 3.2, 3.2, new THREE.Vector3(-2, 2.1, -11.9), 0, 'Daisies flowers', 'Oil pastels on paper'],
+    [artwork9, 2.4, 3.4, new THREE.Vector3(4.4, 2.1, -11.9), 0, 'Artwork 9', 'Original artwork'],
 
     // right wall
     [artwork3, 2.8, 4, new THREE.Vector3(9.9, 2.1, -6), -Math.PI / 2, 'Traditional Persian Tea', 'Oil pastels on paper'],
 
     // right divider
     [artwork5, 3.2, 3.2, new THREE.Vector3(6.5, 2.1, dividerArtworkOffset), 0, 'Sun flowers vase', 'Acrylic paint on canvas'],
-    [artwork7, 1.4, 2.15, new THREE.Vector3(6.5, 2.5, -dividerArtworkOffset), Math.PI, 'Customized Door hanging', 'made by air dry clay and acrylic paints']
+    [artwork8, 1.4, 2.15, new THREE.Vector3(5, 2.5, -dividerArtworkOffset), Math.PI, 'Customized Door hanging', 'made by air dry clay and acrylic paints'],
   ]
 
-  galleryArtworks.forEach(([image, width, height, position, rotationY, title, medium]) => {
-    addArtwork(image, width, height, position, rotationY, title, medium)
-  })
+  const loadGalleryArtworks = async () => {
+    await environmentLoaded
+    for (let index = 0; index < galleryArtworks.length; index += 1) {
+      const [image, width, height, position, rotationY, title, medium] = galleryArtworks[index]
+      try {
+        await addArtwork(image, width, height, position, rotationY, title, medium)
+      } catch (error) {
+        loadingFailed = true
+        console.error(`Could not load artwork: ${title}`, error)
+      }
+    }
+
+    loadingVisual.hidden = true
+    if (loadingFailed) {
+      if (loadingError) {
+        loadingError.hidden = false
+        return
+      }
+    }
+
+    loadingButton.hidden = false
+    loadingButton.disabled = false
+    loadingButton.addEventListener('click', () => {
+      controlsOverlay.hidden = false
+      loadingOverlay.remove()
+    }, { once: true })
+  }
+
+  loadGalleryArtworks()
 
   // 6. Event Listeners for Movement & Looking
   const onKeyDown = (event) => {
