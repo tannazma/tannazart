@@ -60,7 +60,7 @@ function mountGallery(container) {
   )
   camera.position.set(0, 1.6, 0) // Eye level height
   const player = new THREE.Group()
-  player.position.set(0, 0, 8)
+  player.position.set(-4, 0, 8)
   player.add(camera)
   scene.add(player)
 
@@ -110,7 +110,11 @@ function mountGallery(container) {
     resolveEnvironmentLoad = resolve
   })
   const loadingManager = new THREE.LoadingManager()
+  loadingManager.onProgress = (_url, itemsLoaded, itemsTotal) => {
+    updateLoadingProgress((itemsLoaded / itemsTotal) * 45)
+  }
   loadingManager.onLoad = () => {
+    updateLoadingProgress(45)
     resolveEnvironmentLoad()
   }
   loadingManager.onError = (url) => {
@@ -275,6 +279,84 @@ function mountGallery(container) {
   rightWall.rotation.y = -Math.PI / 2
   scene.add(rightWall)
 
+  const exhibitCanvas = document.createElement('canvas')
+  exhibitCanvas.width = 1600
+  exhibitCanvas.height = 1450
+  const exhibitContext = exhibitCanvas.getContext('2d')
+  exhibitContext.fillStyle = '#181a19'
+  exhibitContext.textAlign = 'left'
+  exhibitContext.font = '20px sans-serif'
+  exhibitContext.fillText('GALLERY EXHIBITION', 76, 112)
+  exhibitContext.font = 'bold 94px sans-serif'
+  exhibitContext.fillText('Tannaz', 76, 420)
+  exhibitContext.fillText('Akbari', 76, 530)
+  exhibitContext.font = '48px Georgia, serif'
+  exhibitContext.font = '19px sans-serif'
+  exhibitContext.fillText('My Virtual Experimental', 76, 770)
+  exhibitContext.fillText('Art Gallery', 76, 801)
+
+  exhibitContext.font = '19px sans-serif'
+  exhibitContext.fillText('About me', 700, 150)
+  exhibitContext.font = '42px Georgia, serif'
+  exhibitContext.fillText('Combination of culture with art', 700, 225)
+
+  const drawExhibitParagraph = (text, startY) => {
+    exhibitContext.font = '27px sans-serif'
+    const words = text.split(' ')
+    const lines = []
+    let line = ''
+
+    words.forEach((word) => {
+      const candidate = line ? `${line} ${word}` : word
+      if (exhibitContext.measureText(candidate).width > 820 && line) {
+        lines.push(line)
+        line = word
+      } else {
+        line = candidate
+      }
+    })
+    if (line) lines.push(line)
+
+    lines.forEach((textLine, index) => {
+      exhibitContext.fillText(textLine, 700, startY + index * 40)
+    })
+    return startY + lines.length * 40 + 36
+  }
+
+  let exhibitTextY = drawExhibitParagraph(
+    "I’m a developer who enjoys making art and crafts in my spare time. I’m still an amateur, learning as I go and trying different materials, including oil pastels, acrylic paint, and watercolors.",
+    290
+  )
+  exhibitTextY = drawExhibitParagraph(
+    'I’m also interested in using new technology to make useful tools for artists. My hope is to build a bridge between art and technology, creating simple things that make the creative process a little easier and leave artists more time to make',
+    exhibitTextY
+  )
+  exhibitTextY = drawExhibitParagraph(
+    'I hope you enjoy exploring each artwork up close. Visit my website to see more of my work: tannazart.com.',
+    exhibitTextY
+  )
+
+  const exhibitTexture = new THREE.CanvasTexture(exhibitCanvas)
+  exhibitTexture.colorSpace = THREE.SRGBColorSpace
+  const exhibitPanel = new THREE.Group()
+  const exhibitPoster = new THREE.Mesh(
+    new THREE.PlaneGeometry(4.35, 3.92),
+    new THREE.MeshBasicMaterial({ map: exhibitTexture, transparent: true, depthWrite: false })
+  )
+  exhibitPoster.position.z = 0.01
+  exhibitPanel.add(exhibitPoster)
+  exhibitPanel.position.set(-9.84, 1, 6)
+  exhibitPanel.rotation.y = Math.PI / 2
+  scene.add(exhibitPanel)
+
+  const initialCameraPosition = player.localToWorld(camera.position.clone())
+  const initialViewTarget = exhibitPanel.position.clone()
+  initialViewTarget.y = 1
+  const initialViewDirection = initialViewTarget.clone().sub(initialCameraPosition)
+  yaw = Math.atan2(initialViewDirection.x, -initialViewDirection.z)
+  pitch = Math.asin(initialViewDirection.y / initialViewDirection.length())
+  camera.lookAt(initialViewTarget)
+
   const entranceCenterX = -2
   const entranceWidth = 2.6
   const entranceHeight = 2.8
@@ -308,44 +390,6 @@ function mountGallery(container) {
     entranceCenterX,
     (roomHeight + entranceHeight) / 2
   )
-
-  const doorFrameMaterial = new THREE.MeshStandardMaterial({ color: 0x493326, roughness: 0.72 })
-  const doorFrameDepth = 0.18
-  const entranceHeader = new THREE.Mesh(
-    new THREE.BoxGeometry(entranceWidth + 0.14, 0.16, doorFrameDepth),
-    doorFrameMaterial
-  )
-  entranceHeader.position.set(entranceCenterX, entranceHeight, entranceZ - doorFrameDepth / 2)
-  scene.add(entranceHeader)
-
-  const door = new THREE.Group()
-  door.position.set(entranceLeft, 0, entranceZ - 0.08)
-  door.rotation.y = Math.PI / 3
-  const doorPanelMaterial = new THREE.MeshStandardMaterial({ color: 0x79563b, roughness: 0.62 })
-  const doorPanel = new THREE.Mesh(
-    new THREE.BoxGeometry(entranceWidth, entranceHeight - 0.08, 0.08),
-    doorPanelMaterial
-  )
-  doorPanel.position.set(entranceWidth / 2, (entranceHeight - 0.08) / 2, 0)
-  door.add(doorPanel)
-
-  const doorInsetMaterial = new THREE.MeshStandardMaterial({ color: 0x62432f, roughness: 0.7 })
-  for (const panelY of [0.78, 1.86]) {
-    const inset = new THREE.Mesh(
-      new THREE.BoxGeometry(entranceWidth * 0.68, 0.72, 0.025),
-      doorInsetMaterial
-    )
-    inset.position.set(entranceWidth / 2, panelY, 0.052)
-    door.add(inset)
-  }
-
-  const doorHandle = new THREE.Mesh(
-    new THREE.SphereGeometry(0.065, 16, 12),
-    new THREE.MeshStandardMaterial({ color: 0xc49a50, metalness: 0.72, roughness: 0.28 })
-  )
-  doorHandle.position.set(entranceWidth - 0.2, 1.35, 0.11)
-  door.add(doorHandle)
-  scene.add(door)
 
 
   // Central divider creates two exhibition zones with a wide passage between them.
@@ -545,22 +589,22 @@ function mountGallery(container) {
   const dividerArtworkOffset = dividerThickness / 2 + 0.095
   const galleryArtworks = [
     // left divider
-    [artwork4, 3.2, 3.2, new THREE.Vector3(-6.5, 2.25, dividerArtworkOffset), 0, 'Light in the dark', 'Acrylic paint on canvas'],
-    [artwork6, 3.2, 3.2, new THREE.Vector3(-6.5, 2.1, -dividerArtworkOffset), Math.PI, 'Are you pooping?', 'Oil pastels on paper'],
+    [artwork4, 3.2, 3.2, new THREE.Vector3(-6.5, 2.25, dividerArtworkOffset), 0, 'Light in the dark', 'Acrylic paint on canvas | May 2026'],
+    [artwork6, 3.2, 3.2, new THREE.Vector3(-6.5, 2.1, -dividerArtworkOffset), Math.PI, 'Are you pooping?', 'Oil pastels on paper | September 2026'],
 
     // Left wall
-    [artwork2, 2.8, 4, new THREE.Vector3(-9.9, 2.3, -6), Math.PI / 2, 'The red lighthouse', 'Oil pastels on paper'],
+    [artwork2, 2.8, 4, new THREE.Vector3(-9.9, 2.3, -6), Math.PI / 2, 'The red lighthouse', 'Oil pastels on paper | September 2026'],
 
     // front wall
     [artwork1, 3.2, 3.2, new THREE.Vector3(-2, 2.1, -11.9), 0, 'Daisies flowers', 'Oil pastels on paper'],
-    [artwork9, 2.4, 3.4, new THREE.Vector3(4.4, 2.1, -11.9), 0, 'By the window', 'Water color on paper'],
+    [artwork9, 2.4, 3.4, new THREE.Vector3(4.4, 2.1, -11.9), 0, 'By the window', 'Watercolor on paper | September 2026'],
 
     // right wall
-    [artwork3, 2.8, 4, new THREE.Vector3(9.9, 2.1, -6), -Math.PI / 2, 'Traditional Persian Tea', 'Oil pastels on paper'],
+    [artwork3, 2.8, 4, new THREE.Vector3(9.9, 2.1, -6), -Math.PI / 2, 'Traditional Persian Tea', 'Oil pastels on paper | September 2026'],
 
     // right divider
-    [artwork5, 3.2, 3.2, new THREE.Vector3(6.5, 2.1, dividerArtworkOffset), 0, 'Sun flowers vase', 'Acrylic paint on canvas'],
-    [artwork8, 1.4, 2.15, new THREE.Vector3(5, 2.5, -dividerArtworkOffset), Math.PI, 'Fried Egg in a pan', 'Oil pastels on paper'],
+    [artwork5, 3.2, 3.2, new THREE.Vector3(6.5, 2.1, dividerArtworkOffset), 0, 'Sun flowers vase', 'Acrylic paint on canvas | May 2026'],
+    [artwork8, 1.4, 2.15, new THREE.Vector3(5, 2.5, -dividerArtworkOffset), Math.PI, 'Fried Egg in a pan', 'Oil pastels on paper | October 2026'],
   ]
 
   const visitorEntries = [
@@ -576,7 +620,7 @@ function mountGallery(container) {
   const visitorHeight = 1.7
   const loadVisitorModel = (modelUrl, spot) => new Promise((resolve, reject) => {
     const absoluteUrl = new URL(modelUrl, window.location.href).href
-    const loader = new GLTFLoader()
+    const loader = new GLTFLoader(loadingManager)
     loader.load(
       absoluteUrl,
       (gltf) => {
@@ -640,7 +684,7 @@ function mountGallery(container) {
     )
   })
 
-  visitorEntries.forEach((entry) => {
+  const visitorLoads = visitorEntries.map((entry) =>
     loadVisitorModel(entry.modelUrl, entry.spot)
       .then((visitor) => {
         galleryVisitors.push(visitor)
@@ -648,10 +692,11 @@ function mountGallery(container) {
       .catch((error) => {
         console.error(`Failed to add visitor at spot ${entry.spot.x}, ${entry.spot.z}`, error)
       })
-  })
+  )
 
   const loadGalleryArtworks = async () => {
     await environmentLoaded
+    await Promise.all(visitorLoads)
     for (let index = 0; index < galleryArtworks.length; index += 1) {
       const [image, width, height, position, rotationY, title, medium] = galleryArtworks[index]
       try {
@@ -659,8 +704,10 @@ function mountGallery(container) {
       } catch (error) {
         console.error(`Could not load artwork: ${title}`, error)
       }
+      updateLoadingProgress(45 + ((index + 1) / galleryArtworks.length) * 55)
     }
 
+    updateLoadingProgress(100)
     loadingVisual.hidden = true
     loadingButton.hidden = false
     loadingButton.disabled = false
