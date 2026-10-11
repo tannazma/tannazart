@@ -608,12 +608,14 @@ function mountGallery(container) {
   ]
 
   const visitorEntries = [
-    { spot: { x: -8, z: -6, rotation: -Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor1.glb' },
-    { spot: { x: 4.4, z: -9.5, rotation: Math.PI }, modelUrl: './src/assets/visitors/visitor2.glb' },
-    { spot: { x: 6.5, z: 2.2, rotation: Math.PI }, modelUrl: './src/assets/visitors/visitor3.glb' },
-    { spot: { x: 13, z: -4, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor4.glb' },
-    { spot: { x: 4, z: -1.8, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor5.glb' },
-    { spot: { x: 8.2, z: -6, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor6.glb' },
+    { spot: { x: -8, z: -6, rotation: -Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor7.glb' },
+    { spot: { x: 4.4, z: -5.5, rotation: Math.PI }, modelUrl: './src/assets/visitors/visitor8.glb' },
+    { spot: { x: 3.5, z: 5, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor9.glb' },
+    { spot: { x: 4, z: -7, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor10.glb' },
+    { spot: { x: 6, z: -4, rotation: 0 }, modelUrl: './src/assets/visitors/visitor11.glb' },
+    { spot: { x: 4.2, z: -7, rotation: -Math.PI  }, modelUrl: './src/assets/visitors/visitor12.glb' },
+    { spot: { x: -4.4, z: -1, rotation: Math.PI }, modelUrl: './src/assets/visitors/visitor9.glb' },
+    { spot: { x: -5, z: -5.5, rotation: 0 }, modelUrl: './src/assets/visitors/visitor8.glb' },
   ]
   const galleryVisitors = []
 
