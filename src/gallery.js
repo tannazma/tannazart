@@ -1,5 +1,6 @@
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.159.0/build/three.module.js'
-import { VRButton } from 'https://cdn.jsdelivr.net/npm/three@0.159.0/examples/jsm/webxr/VRButton.js'
+import * as THREE from 'three'
+import { VRButton } from 'three/addons/webxr/VRButton.js'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
 
 const artwork1 = './src/assets/arts/artwork1.jpg'
 const artwork2 = './src/assets/arts/artwork2.jpg'
@@ -459,6 +460,68 @@ function mountGallery(container) {
     [artwork8, 1.4, 2.15, new THREE.Vector3(5, 2.5, -dividerArtworkOffset), Math.PI, 'Customized Door hanging', 'made by air dry clay and acrylic paints'],
   ]
 
+  const visitorEntries = [
+    { spot: { x: -8, z: -6, rotation: -Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor1.glb' },
+    { spot: { x: 4.4, z: -9.5, rotation: Math.PI }, modelUrl: './src/assets/visitors/visitor2.glb' },
+    { spot: { x: 6.5, z: 2.2, rotation: Math.PI }, modelUrl: './src/assets/visitors/visitor3.glb' },
+    { spot: { x: 13, z: -4, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor4.glb' },
+    { spot: { x: 8.2, z: -6, rotation: Math.PI / 2 }, modelUrl: './src/assets/visitors/visitor5.glb' },
+  ]
+  const galleryVisitors = []
+
+  const visitorHeight = 1.7
+  const loadVisitorModel = (modelUrl, spot) => new Promise((resolve, reject) => {
+    const absoluteUrl = new URL(modelUrl, window.location.href).href
+    const loader = new GLTFLoader()
+    loader.load(
+      absoluteUrl,
+      (gltf) => {
+        const visitor = gltf.scene
+        const boundingBox = new THREE.Box3().setFromObject(visitor)
+        const modelSize = new THREE.Vector3()
+        boundingBox.getSize(modelSize)
+
+        const scale = visitorHeight / Math.max(modelSize.y, 0.001)
+        visitor.scale.setScalar(scale)
+
+        visitor.position.set(spot.x, 0, spot.z)
+        const scaledBox = new THREE.Box3().setFromObject(visitor)
+        visitor.position.y -= scaledBox.min.y
+        visitor.rotation.y = spot.rotation
+
+        visitor.traverse((child) => {
+          if (child.isMesh) {
+            child.castShadow = false
+            child.receiveShadow = false
+          }
+        })
+
+        scene.add(visitor)
+        resolve({
+          group: visitor,
+          head: visitor.userData?.head ?? null,
+          idlePhase: Math.random() * Math.PI * 2,
+          baseHeight: visitor.position.y
+        })
+      },
+      undefined,
+      (error) => {
+        console.error(`Could not load visitor model: ${modelUrl}`, error)
+        reject(error)
+      }
+    )
+  })
+
+  visitorEntries.forEach((entry) => {
+    loadVisitorModel(entry.modelUrl, entry.spot)
+      .then((visitor) => {
+        galleryVisitors.push(visitor)
+      })
+      .catch((error) => {
+        console.error(`Failed to add visitor at spot ${entry.spot.x}, ${entry.spot.z}`, error)
+      })
+  })
+
   const loadGalleryArtworks = async () => {
     await environmentLoaded
     for (let index = 0; index < galleryArtworks.length; index += 1) {
@@ -523,6 +586,7 @@ function mountGallery(container) {
 
   // 7. Animation Loop (Handles Walking physics)
   const animate = () => {
+    const elapsedTime = performance.now() * 0.001
     const speed = 0.05
     const direction = new THREE.Vector3()
     camera.getWorldDirection(direction)
@@ -552,6 +616,13 @@ function mountGallery(container) {
     // Keep camera inside room boundaries
     player.position.x = Math.max(-9, Math.min(9, player.position.x))
     player.position.z = Math.max(-11, Math.min(11, player.position.z))
+
+    galleryVisitors.forEach((visitor) => {
+      visitor.group.position.y = visitor.baseHeight + Math.sin(elapsedTime + visitor.idlePhase) * 0.012
+      if (visitor.head) {
+        visitor.head.rotation.y = Math.sin(elapsedTime * 0.55 + visitor.idlePhase) * 0.06
+      }
+    })
 
     renderer.render(scene, camera)
   }
