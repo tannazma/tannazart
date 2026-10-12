@@ -366,7 +366,7 @@ function mountGallery(container) {
     new THREE.PlaneGeometry(4.35, 3.92),
     new THREE.MeshBasicMaterial({ map: exhibitTexture, transparent: true, depthWrite: false })
   )
-  exhibitPoster.position.z = 0.01
+  exhibitPoster.position.z = -0.145
   exhibitPanel.add(exhibitPoster)
   const exhibitLineLight = new THREE.Mesh(
     new THREE.PlaneGeometry(4.15, 0.025),
@@ -630,7 +630,7 @@ function mountGallery(container) {
     [artwork9, 2.4, 3.4, new THREE.Vector3(4.4, 2.1, -11.9), 0, 'By the window', 'Watercolor on paper | September 2026'],
 
     // right wall
-    [artwork3, 2.8, 4, new THREE.Vector3(9.9, 2.1, -6), -Math.PI / 2, 'Traditional Persian Tea', 'Oil pastels on paper | September 2026'],
+    [artwork3, 2.8, 4, new THREE.Vector3(9.9, 2.4, -6), -Math.PI / 2, 'Traditional Persian Tea', 'Oil pastels on paper | September 2026'],
     
     // right divider
     [artwork5, 3.2, 3.2, new THREE.Vector3(6.5, 2.1, dividerArtworkOffset), 0, 'Sun flowers vase', 'Acrylic paint on canvas | May 2026'],
@@ -890,21 +890,35 @@ function mountGallery(container) {
       moveCamera(movementDirection, speed * movementLength)
     }
 
-    // Use either Quest thumbstick for smooth locomotion in VR.
-    if (galleryEntered) {
+    // Quest uses the left thumbstick to turn and the right thumbstick to walk.
+    if (galleryEntered && renderer.xr.isPresenting) {
+      const vrDirection = renderer.xr.getCamera(camera).getWorldDirection(new THREE.Vector3())
+      vrDirection.y = 0
+      vrDirection.normalize()
+      const vrSideDirection = new THREE.Vector3(-vrDirection.z, 0, vrDirection.x)
+
       xrControllers.forEach((controller) => {
-        const gamepad = controller.userData.inputSource?.gamepad
-        if (!gamepad || gamepad.axes.length < 4) return
+        const inputSource = controller.userData.inputSource
+        const gamepad = inputSource?.gamepad
+        if (!gamepad || gamepad.axes.length < 2) return
 
-        const stickX = Math.abs(gamepad.axes[2]) > 0.15 ? gamepad.axes[2] : 0
-        const stickY = Math.abs(gamepad.axes[3]) > 0.15 ? gamepad.axes[3] : 0
-        if (!stickX && !stickY) return
+        const thumbstickAxis = gamepad.axes.length >= 4 ? 2 : 0
+        const stickX = Math.abs(gamepad.axes[thumbstickAxis]) > 0.15
+          ? gamepad.axes[thumbstickAxis]
+          : 0
+        const stickY = Math.abs(gamepad.axes[thumbstickAxis + 1]) > 0.15
+          ? gamepad.axes[thumbstickAxis + 1]
+          : 0
 
-        const stickLength = Math.min(1, Math.hypot(stickX, stickY))
-        const stickDirection = direction.clone().multiplyScalar(-stickY)
-          .addScaledVector(sideDirection, stickX)
-          .normalize()
-        moveCamera(stickDirection, stickLength * speed)
+        if (inputSource.handedness === 'left') {
+          player.rotation.y -= stickX * 1.8 * deltaTime
+        } else if (inputSource.handedness === 'right' && (stickX || stickY)) {
+          const stickLength = Math.min(1, Math.hypot(stickX, stickY))
+          const stickDirection = vrDirection.clone().multiplyScalar(-stickY)
+            .addScaledVector(vrSideDirection, stickX)
+            .normalize()
+          moveCamera(stickDirection, stickLength * speed)
+        }
       })
     }
 
