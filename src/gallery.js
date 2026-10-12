@@ -79,8 +79,16 @@ function mountGallery(container) {
   renderer.setSize(container.clientWidth, container.clientHeight)
   container.appendChild(renderer.domElement)
   renderer.domElement.style.pointerEvents = 'none'
-  const vrButton = VRButton.createButton(renderer)
-  document.body.appendChild(vrButton)
+  let vrButton
+  if (navigator.xr) {
+    navigator.xr.isSessionSupported('immersive-vr').then((supported) => {
+      if (!supported || eventController.signal.aborted) return
+      vrButton = VRButton.createButton(renderer)
+      document.body.appendChild(vrButton)
+    }).catch((error) => {
+      console.error('Could not check immersive VR support:', error)
+    })
+  }
 
   const xrControllers = [renderer.xr.getController(0), renderer.xr.getController(1)]
   xrControllers.forEach((controller) => {
@@ -927,7 +935,7 @@ function mountGallery(container) {
   return () => {
     renderer.setAnimationLoop(null)
     eventController.abort()
-    vrButton.remove()
+    vrButton?.remove()
     xrControllers.forEach((controller) => scene.remove(controller))
     renderer.dispose()
     renderer.domElement.remove()

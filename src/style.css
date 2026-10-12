@@ -84,6 +84,7 @@ p {
   width: 132px;
   height: 132px;
   box-sizing: border-box;
+  z-index: 15;
   border: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.38);
@@ -107,7 +108,7 @@ p {
   will-change: transform;
 }
 
-@media (pointer: coarse) {
+@media (pointer: coarse), (max-width: 768px) {
   .desktop-controls-hint {
     display: none;
   }
