@@ -11,7 +11,7 @@ const artwork6 = './src/assets/arts/artwork6.webp'
 const artwork8 = './src/assets/arts/artwork8.webp'
 const artwork9 = './src/assets/arts/artwork9.webp'
 const artwork10 = './src/assets/arts/artwork10.webp'
-const wallTextureImage = './src/assets/wall-texture-4.webp'
+const wallTextureImage = './src/assets/wall-texture.webp'
 const floorTextureImage = './src/assets/floor-texture.webp'
 const floorMedallionImage = './src/assets/floor-texture-2.webp'
 const ceilingTextureImage = './src/assets/ceiling-texture.webp'
@@ -44,9 +44,15 @@ function mountGallery(container) {
   let moveBackward = false
   let moveLeft = false
   let moveRight = false
+  let joystickX = 0
+  let joystickY = 0
   let yaw = 0
   let pitch = 0
   let galleryEntered = false
+  let lookPointerId = null
+  let previousLookX = 0
+  let previousLookY = 0
+  let previousFrameTime = performance.now()
   const eventController = new AbortController()
   const listenerOptions = { signal: eventController.signal }
 
@@ -739,6 +745,7 @@ function mountGallery(container) {
       moveLeft = false
       moveRight = false
       renderer.domElement.style.pointerEvents = 'auto'
+      renderer.domElement.style.touchAction = 'none'
       controlsOverlay.hidden = false
       loadingOverlay.remove()
     }, { once: true })
@@ -762,11 +769,7 @@ function mountGallery(container) {
     if (event.code === 'KeyD' || event.code === 'ArrowRight') moveRight = false
   }
 
-  const onMouseMove = (event) => {
-    if (!galleryEntered) return
-    const movementX = event.movementX || 0
-    const movementY = event.movementY || 0
-
+  const updateView = (movementX, movementY) => {
     yaw += movementX * 0.003
     pitch -= movementY * 0.003
     pitch = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, pitch))
@@ -780,29 +783,104 @@ function mountGallery(container) {
     camera.lookAt(cameraPosition.add(direction))
   }
 
+  const onMouseMove = (event) => {
+    if (!galleryEntered) return
+    updateView(event.movementX || 0, event.movementY || 0)
+  }
+
+  const mobileJoystick = container.querySelector('.mobile-joystick')
+  const joystickKnob = mobileJoystick.querySelector('.mobile-joystick-knob')
+  let joystickPointerId = null
+  const updateJoystick = (event) => {
+    const bounds = mobileJoystick.getBoundingClientRect()
+    const maxTravel = (bounds.width - joystickKnob.offsetWidth) / 2
+    const centerX = bounds.left + bounds.width / 2
+    const centerY = bounds.top + bounds.height / 2
+    const deltaX = event.clientX - centerX
+    const deltaY = event.clientY - centerY
+    const distance = Math.hypot(deltaX, deltaY)
+    const scale = distance > maxTravel ? maxTravel / distance : 1
+    const knobX = deltaX * scale
+    const knobY = deltaY * scale
+    joystickX = knobX / maxTravel
+    joystickY = knobY / maxTravel
+    joystickKnob.style.transform = `translate(calc(-50% + ${knobX}px), calc(-50% + ${knobY}px))`
+  }
+  const resetJoystick = () => {
+    joystickPointerId = null
+    joystickX = 0
+    joystickY = 0
+    joystickKnob.style.transform = 'translate(-50%, -50%)'
+  }
+  mobileJoystick.addEventListener('pointerdown', (event) => {
+    if (joystickPointerId !== null) return
+    event.preventDefault()
+    joystickPointerId = event.pointerId
+    mobileJoystick.setPointerCapture(event.pointerId)
+    updateJoystick(event)
+  }, listenerOptions)
+  mobileJoystick.addEventListener('pointermove', (event) => {
+    if (event.pointerId === joystickPointerId) updateJoystick(event)
+  }, listenerOptions)
+  mobileJoystick.addEventListener('pointerup', (event) => {
+    if (event.pointerId === joystickPointerId) resetJoystick()
+  }, listenerOptions)
+  mobileJoystick.addEventListener('pointercancel', resetJoystick, listenerOptions)
+  mobileJoystick.addEventListener('lostpointercapture', resetJoystick, listenerOptions)
+
+  container.addEventListener('pointerdown', (event) => {
+    if (!galleryEntered || event.pointerType !== 'touch' || event.target.closest('.mobile-joystick')) return
+    event.preventDefault()
+    container.setPointerCapture(event.pointerId)
+    lookPointerId = event.pointerId
+    previousLookX = event.clientX
+    previousLookY = event.clientY
+  }, listenerOptions)
+  container.addEventListener('pointermove', (event) => {
+    if (event.pointerId !== lookPointerId) return
+    event.preventDefault()
+    updateView(event.clientX - previousLookX, event.clientY - previousLookY)
+    previousLookX = event.clientX
+    previousLookY = event.clientY
+  }, listenerOptions)
+  const stopLooking = (event) => {
+    if (event.pointerId === lookPointerId) lookPointerId = null
+  }
+  container.addEventListener('pointerup', stopLooking, listenerOptions)
+  container.addEventListener('pointercancel', stopLooking, listenerOptions)
+
   // One controller removes all input and resize listeners when the gallery unmounts.
   window.addEventListener('keydown', onKeyDown, listenerOptions)
   window.addEventListener('keyup', onKeyUp, listenerOptions)
-  container.addEventListener('click', () => {
-    if (galleryEntered) container.requestPointerLock()
+  container.addEventListener('click', (event) => {
+    if (galleryEntered && window.matchMedia('(pointer: fine)').matches) {
+      container.requestPointerLock()
+    }
   }, listenerOptions)
   document.addEventListener('mousemove', onMouseMove, listenerOptions)
 
   // 7. Animation Loop (Handles Walking physics)
   const animate = () => {
-    const elapsedTime = performance.now() * 0.001
-    const speed = 0.05
+    const frameTime = performance.now()
+    const deltaTime = Math.min((frameTime - previousFrameTime) / 1000, 0.05)
+    previousFrameTime = frameTime
+    const elapsedTime = frameTime * 0.001
+    const speed = 3 * deltaTime
     const direction = new THREE.Vector3()
     camera.getWorldDirection(direction)
     direction.y = 0
     direction.normalize()
 
     const sideDirection = new THREE.Vector3(-direction.z, 0, direction.x)
-
-    if (moveForward) moveCamera(direction, speed)
-    if (moveBackward) moveCamera(direction, -speed)
-    if (moveRight) moveCamera(sideDirection, speed)
-    if (moveLeft) moveCamera(sideDirection, -speed)
+    const forwardAmount = Number(moveForward) - Number(moveBackward) - joystickY
+    const sideAmount = Number(moveRight) - Number(moveLeft) + joystickX
+    const movementLength = Math.min(1, Math.hypot(forwardAmount, sideAmount))
+    if (movementLength > 0) {
+      const movementDirection = direction.multiplyScalar(forwardAmount)
+        .addScaledVector(sideDirection, sideAmount)
+        .normalize()
+      moveCamera(movementDirection, speed * movementLength)
+    }
 
     // Use either Quest thumbstick for smooth locomotion in VR.
     if (galleryEntered) {
@@ -814,8 +892,11 @@ function mountGallery(container) {
         const stickY = Math.abs(gamepad.axes[3]) > 0.15 ? gamepad.axes[3] : 0
         if (!stickX && !stickY) return
 
-        moveCamera(direction, -stickY * speed)
-        moveCamera(sideDirection, stickX * speed)
+        const stickLength = Math.min(1, Math.hypot(stickX, stickY))
+        const stickDirection = direction.clone().multiplyScalar(-stickY)
+          .addScaledVector(sideDirection, stickX)
+          .normalize()
+        moveCamera(stickDirection, stickLength * speed)
       })
     }
 

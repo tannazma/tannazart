@@ -49,6 +49,7 @@ p {
   cursor: crosshair;
   color: #fff;
   background: #000;
+  touch-action: none;
 }
 
 .controls-overlay {
@@ -68,6 +69,56 @@ p {
 .controls-overlay h3 {
   margin: 0 0 5px;
   font-size: 15px;
+}
+
+.mobile-controls-hint,
+.mobile-joystick {
+  display: none;
+}
+
+.mobile-joystick {
+  --joystick-travel: 38px;
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom));
+  left: calc(20px + env(safe-area-inset-left));
+  width: 132px;
+  height: 132px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.38);
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.mobile-joystick-knob {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 54px;
+  height: 54px;
+  box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  will-change: transform;
+}
+
+@media (pointer: coarse) {
+  .desktop-controls-hint {
+    display: none;
+  }
+
+  .mobile-controls-hint {
+    display: block;
+  }
+
+  .mobile-joystick {
+    display: block;
+  }
 }
 
 .loading-overlay {

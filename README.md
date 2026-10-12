@@ -18,4 +18,5 @@ Then open [http://localhost:8000](http://localhost:8000).
 
 - **W, A, S, D** or **arrow keys**: move around the gallery
 - **Mouse**: click the gallery and move the mouse to look around
+- **Touchscreen**: drag to look around and use the on-screen joystick to walk
 - **VR headset**: when available, use the on-page VR button to enter; use the controller thumbsticks to move
